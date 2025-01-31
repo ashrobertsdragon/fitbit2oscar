@@ -1,0 +1,17 @@
+[project]
+name = "fitbit2oscar"
+version = "0.1.0"
+description = "Fork of existing fitbit-convert script from the Apnea Board forums"
+readme = "README.md"
+authors = [
+    { name = "Ashlynn Antrobus", email = "ashlynn@prosepal.io" }
+]
+requires-python = ">=3.8"
+dependencies = []
+
+[project.scripts]
+fitbit2oscar = "fitbit2oscar:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
