@@ -1,2 +1,5 @@
+import __main__
+
+
 def main() -> None:
-    print("Hello from fitbit2oscar!")
+    __main__.main()
