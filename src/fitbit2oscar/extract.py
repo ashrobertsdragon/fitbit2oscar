@@ -52,7 +52,9 @@ def extract_sp02_data(
     Extracts timestamp and sp02 values from CSV rows.
 
     Creates a generator of tuples containing timestamps converted from UTC and
-    sp02 values in range 61-99.
+    Sp02 values that are at least 80%, the minimum value that Fitbit reports.
+    The generator discards values of "50" which are a stand-in for Fitbit
+    recording that the Sp02 value was below 80%.
 
     Args:
         csv_rows (Generator[dict[str, str]]): Generator of CSV rows of Sp02
@@ -68,7 +70,7 @@ def extract_sp02_data(
             row["timestamp"], timezone
         )
         sp02: int = round(float(row["value"]))
-        if 61 <= sp02 <= 99:
+        if sp02 >= 80:
             yield timestamp, sp02
 
 
@@ -104,8 +106,8 @@ def extract_bpm_data(
 
 def is_valid_sleep_entry(
     sleep_entry: SleepEntry,
-    start_date: datetime.date = datetime.date.fromordinal(1),
-    end_date: datetime.date = datetime.date.today(),
+    start_date: datetime.date,
+    end_date: datetime.date,
 ) -> bool:
     """
     Validates a sleep entry based on format, date range, and presence of light
@@ -143,7 +145,8 @@ def is_valid_sleep_entry(
 
 def extract_sleep_time_data(
     json_entries: Generator[SleepEntry],
-    timezone: str,
+    start_date: datetime.date,
+    end_date: datetime.date,
 ) -> Generator[SleepEntry, None, None]:
     """
     Extracts timestamp, duration, levels, start time, stop time, wake after
@@ -159,7 +162,6 @@ def extract_sleep_time_data(
                 "dateOfSleep": str,
                 "levels": dict[str, dict[str, dict[str, int]]]
             }
-        timezone (str): Timezone to convert timestamps to.
 
     Returns:
         Generator[SleepEntry, None, None]: Generator of dictionaries
@@ -168,13 +170,13 @@ def extract_sleep_time_data(
     """
 
     for entry in json_entries:
-        if is_valid_sleep_entry(entry):
+        if is_valid_sleep_entry(entry, start_date, end_date):
             entry_dict = {
                 "timestamp": entry["dateOfSleep"],
                 "duration": entry["duration"],
                 "levels": entry["levels"],
-                "start_time": convert_timestamp(entry["startTime"], timezone),
-                "stop_time": convert_timestamp(entry["endTime"], timezone),
+                "start_time": entry["startTime"],
+                "stop_time": entry["endTime"],
                 "wake_after_sleep_onset_duration": entry["minutesAwake"],
                 "sleep_efficiency": entry["efficiency"],
             }
@@ -238,18 +240,16 @@ def parse_sleep_data(
             'wake_after_sleep_onset_duration', and 'sleep_efficiency'.
 
     Returns:
-        dict[str, datetime.datetime | int]: A dictionary containing parsed
+        dict[str, str | int]: A dictionary containing parsed
             sleep metrics, including durations in HH:MM:SS format, start and
-            stop times as datetime objects, and a hypnogram as a list of sleep
-            stage names.
+            stop times, and a hypnogram as a list of sleep stage names.
     """
 
     return {
+        "start_time": sleep_data["start_time"],
+        "stop_time": sleep_data["stop_time"],
         "sleep_onset_duration": convert_time_data(
             sleep_data["duration"] / 60000
-        ),
-        "wake_after_sleep_onset_duration": convert_time_data(
-            sleep_data["wake_after_sleep_onset_duration"]
         ),
         "light_sleep_duration": convert_time_data(
             sleep_data["levels"]["summary"]["light"]["minutes"]
@@ -260,18 +260,21 @@ def parse_sleep_data(
         "rem_sleep_duration": convert_time_data(
             sleep_data["levels"]["summary"]["rem"]["minutes"]
         ),
+        "wake_after_sleep_onset_duration": convert_time_data(
+            sleep_data["wake_after_sleep_onset_duration"]
+        ),
         "number_awakenings": sleep_data["levels"]["summary"]["wake"]["count"],
         "sleep_efficiency": sleep_data["sleep_efficiency"],
-        "start_time": sleep_data["start_time"],
-        "stop_time": sleep_data["stop_time"],
-        "hypnogram": generate_hypnogram(sleep_data["levels"]["data"]),
+        "hypnogram": f"[{','.join(generate_hypnogram(sleep_data["levels"]["data"]))}]",
     }
 
 
 def extract_sleep_data(
     sleep_files: list[Path],
     timezone: str,
-) -> list[dict[str, datetime.datetime | int]]:
+    start_date: datetime.date = datetime.date.fromordinal(1),
+    end_date: datetime.date = datetime.date.today(),
+) -> Generator[dict[str, str | int], None, None]:
     """
     Extracts sleep data from a list of Fitbit sleep JSON files and timezone.
 
@@ -280,23 +283,27 @@ def extract_sleep_data(
         timezone (str): Timezone to convert timestamps to.
 
     Returns:
-        list[dict[str, datetime.datetime | int]]: List of sleep data
+        list[dict[str, str | int]]: List of sleep data
             dictionaries containing sleep onset duration, wake after sleep
             onset duration, light sleep duration, deep sleep duration, REM
             sleep duration, number of awakenings, sleep efficiency, start
             time, stop time, and hypnogram.
     """
 
-    return [
-        parse_sleep_data(extract_sleep_time_data(json_entry), timezone)
+    yield from (
+        parse_sleep_data(
+            extract_sleep_time_data(json_entry), timezone, start_date, end_date
+        )
         for json_entry in read_file.read_json_file(sleep_files)
-    ]
+    )
 
 
 def extract_sleep_health_data(
     sp02_files: list[Path],
     bpm_files: list[Path],
     timezone: str,
+    start_date: datetime.date = datetime.date.fromordinal(1),
+    end_date: datetime.date = datetime.date.today(),
     session_split: int = 15,
 ) -> list[dict[str, datetime.datetime | int]]:
     """
@@ -315,8 +322,8 @@ def extract_sleep_health_data(
         timezone (str): Timezone to convert timestamps to.
 
     Returns:
-        list[list[dict[str, datetime.datetime | int]]]: List of session lists,
-            each containing dictionaries containing Sp02 and heart rate for
+        list[list[tuple[str, datetime.datetime | int]]]: List of session lists,
+            each containing tuples containing Sp02 and heart rate for
             given timestamp.
     """
     sp02_data = {
@@ -326,6 +333,7 @@ def extract_sleep_health_data(
             read_file.read_csv_file(sp02_file),
             timezone,
         )
+        if start_date < timestamp.date() < end_date
     }
     bpm_data = {
         timestamp: bpm
@@ -334,6 +342,7 @@ def extract_sleep_health_data(
             read_file.read_json_file(bpm_file),
             timezone,
         )
+        if start_date < timestamp.date() < end_date
     }
 
     sessions = []
@@ -344,11 +353,7 @@ def extract_sleep_health_data(
     for timestamp in sorted(
         set(sp02_data.keys()).intersection(bpm_data.keys())
     ):
-        session.append({
-            "timestamp": timestamp,
-            "Sp02": sp02_data[timestamp],
-            "BPM": bpm_data[timestamp],
-        })
+        session.append((timestamp, sp02_data[timestamp], bpm_data[timestamp]))
         if (
             prev_timestamp
             and prev_timestamp + datetime.timedelta(minutes=session_split)
