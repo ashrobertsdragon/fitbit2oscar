@@ -1,74 +1,33 @@
 import argparse
 import datetime
+import importlib
 import re
+from enum import StrEnum
 from pathlib import Path
 
-from fitbit2oscar.read_file import read_csv_file
+
+class InputType(StrEnum):
+    TAKEOUT = "takeout"
+    HEALTH_SYNC = "health_sync"
 
 
-def get_fitbit_path(input_path: str) -> Path:
-    """Get path to Fitbit directory."""
-    fitbit = Path(input_path)
-    if not fitbit.exists() and fitbit.is_dir():
-        raise FileExistsError(f"{input_path} is not a valid path")
-    candidates = [
-        fitbit / "Fitbit",
-        fitbit / "Takeout" / "Fitbit",
-    ]
-    for path in candidates:
-        if path.exists() and path.is_dir():
-            return path
-    raise FileExistsError(f"{input_path} is not a valid path")
-
-
-def profile_path(fitbit_path: Path) -> Path:
-    """Get path to profile file."""
-    return fitbit_path / "Your Profile" / "Profile.csv"
-
-
-def export_path(fitbit_path: Path) -> Path:
-    """Get path to export data directory."""
-    return fitbit_path / "Global Export Data"
-
-
-def get_sleep_paths(fitbit_path: Path) -> list[Path]:
-    """Get paths to sleep data JSON files."""
-    return list(export_path(fitbit_path).glob("sleep-*.json"))
-
-
-def get_sp02_paths(fitbit_path: Path) -> list[Path]:
-    """Get paths to Sp02 data CSV files."""
-    sp02 = fitbit_path / "Oxygen Saturation (SpO2)"
-    return list(sp02.glob("spo2-*.csv"))
-
-
-def get_bpm_paths(fitbit_path: Path) -> list[Path]:
-    """Get paths to heart rate data JSON files."""
-    return list(export_path(fitbit_path).glob("heart-rate-*.json"))
-
-
-def get_paths(fitbit_path: str) -> tuple[list[Path], list[Path], list[Path]]:
-    """Get paths to sleep, sp02, and bpm files."""
-    return (
-        get_sleep_paths(fitbit_path),
-        get_sp02_paths(fitbit_path),
-        get_bpm_paths(fitbit_path),
-    )
-
-
-def get_timezone(fitbit_path: Path) -> str:
-    """Get timezone from profile file."""
-    for row in read_csv_file(profile_path(fitbit_path)):
-        timezone: str = row["timezone"]
-    if not timezone:
-        raise ValueError("Could not find timezone")
-    return timezone
+def get_fitbit_path(input_path: Path, input_type: str) -> Path:
+    try:
+        InputType(input_type)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"Invalid structure '{input_type}', must be one of {list(InputType)}"
+        )
+    module = f"{input_type}.helpers"
+    importlib.import_module(module)
+    func = f"get_{input_type}_fitbit_path"
+    return getattr(module, func)(input_path)
 
 
 def process_date_arg(datestring: str, argtype: str) -> datetime.date:
     datematch = re.match(r"(\d{4})-(\d{1,2})-(\d{1,2})", datestring)
     if datematch is None:
-        raise argparse.ArgumentError(
+        raise argparse.ArgumentTypeError(
             f"Invalid {argtype} date argument '{datestring}', must match YYYY-M-D format"
         )
     dateobj = datetime.date(
@@ -77,7 +36,7 @@ def process_date_arg(datestring: str, argtype: str) -> datetime.date:
         day=int(datematch.group(3)),
     )
     if not (datetime.date.today() >= dateobj >= datetime.date(2010, 1, 1)):
-        raise argparse.ArgumentError(
+        raise argparse.ArgumentTypeError(
             f"Invalid {argtype} date {datestring}, must be on or before today's date and no older than 2010-01-01."
         )
 
