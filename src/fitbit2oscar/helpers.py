@@ -5,7 +5,8 @@ import re
 from pathlib import Path
 
 from fitbit2oscar._enums import InputType
-from fitbit2oscar.handlers import DataHandler
+from fitbit2oscar.factory import DataHandlerFactory
+from fitbit2oscar.parse import parse_sleep_data, parse_sleep_health_data
 
 
 def get_fitbit_path(input_path: Path, input_type: str) -> Path:
@@ -45,9 +46,15 @@ def process_date_arg(datestring: str, argtype: str) -> datetime.date:
     return adjustments[argtype](dateobj)
 
 
-def get_data(args: argparse.Namespace) -> tuple[list[dict], list]:
+def get_data(
+    args: argparse.Namespace,
+) -> tuple[
+    list[dict[str, datetime.datetime | int]], list[dict[str, str | int]]
+]:
     """Parse data using the appropriate handler."""
-    handler = DataHandler.create_client(args.input_type, args)
+    handler = DataHandlerFactory.create_client(args.input_type, args)
     handler.get_paths_and_timezone()
-    viatom_data, dreem_data = handler.parse_data()
+    sp02_data, bpm_data, sleep_data = handler.extract_data()
+    viatom_data = parse_sleep_health_data(sp02_data, bpm_data)
+    dreem_data = parse_sleep_data(sleep_data)
     return viatom_data, dreem_data
