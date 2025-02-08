@@ -4,7 +4,6 @@ from pathlib import Path
 
 from fitbit2oscar import read_file
 from fitbit2oscar.time_helpers import convert_timestamp
-from fitbit2oscar.parse import parse_sleep_data
 from fitbit2oscar._types import SleepEntry
 
 
@@ -106,7 +105,7 @@ def is_valid_sleep_entry(
     )
 
 
-def extract_sleep_time_data(
+def extract_sleep_data(
     json_entries: Generator[SleepEntry],
     start_date: datetime.date,
     end_date: datetime.date,
@@ -134,7 +133,7 @@ def extract_sleep_time_data(
 
     for entry in json_entries:
         if is_valid_sleep_entry(entry, start_date, end_date):
-            entry_dict = {
+            entry_dict: SleepEntry = {
                 "timestamp": entry["dateOfSleep"],
                 "duration": entry["duration"],
                 "levels": entry["levels"],
@@ -145,35 +144,6 @@ def extract_sleep_time_data(
             }
 
             yield entry_dict
-
-
-def extract_sleep_data(
-    sleep_files: list[Path],
-    timezone: str,
-    start_date: datetime.date = datetime.date.fromordinal(1),
-    end_date: datetime.date = datetime.date.today(),
-) -> list[dict[str, str | int], None, None]:
-    """
-    Extracts sleep data from a list of Fitbit sleep JSON files and timezone.
-
-    Args:
-        sleep_files (list[Path]): List of JSON files containing sleep data.
-        timezone (str): Timezone to convert timestamps to.
-
-    Returns:
-        list[dict[str, str | int]]: List of sleep data
-            dictionaries containing sleep onset duration, wake after sleep
-            onset duration, light sleep duration, deep sleep duration, REM
-            sleep duration, number of awakenings, sleep efficiency, start
-            time, stop time, and hypnogram.
-    """
-
-    return [
-        parse_sleep_data(
-            extract_sleep_time_data(json_entry), timezone, start_date, end_date
-        )
-        for json_entry in read_file.read_json_file(sleep_files)
-    ]
 
 
 def extract_sleep_health_data(

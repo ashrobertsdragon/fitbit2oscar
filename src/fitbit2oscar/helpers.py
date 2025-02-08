@@ -54,7 +54,7 @@ def get_data(
     """Parse data using the appropriate handler."""
     handler = DataHandlerFactory.create_client(args.input_type, args)
     handler.get_paths_and_timezone()
-    sp02_data, bpm_data, sleep_data = handler.extract_data()
+    sp02_data, bpm_data, sleep_data_generator = handler.extract_data()
     viatom_data = parse_sleep_health_data(sp02_data, bpm_data)
-    dreem_data = parse_sleep_data(sleep_data)
+    dreem_data = parse_sleep_data(sleep_data_generator)
     return viatom_data, dreem_data
