@@ -3,6 +3,8 @@ import datetime
 import importlib
 from pathlib import Path
 
+import fitbit2oscar.time_helpers as time_helpers
+
 
 class DataHandler:
     package = "fitbit2oscar"
@@ -11,19 +13,13 @@ class DataHandler:
     @classmethod
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
+        package = cls.package
+        if package in cls._registry:
+            raise ValueError(f"Data handler '{package}' already exists")
         cls._registry[cls.package] = cls
 
-    @classmethod
-    def create_client(
-        cls, input_type: str, args: argparse.Namespace
-    ) -> "DataHandler":
-        try:
-            return cls._registry[input_type](args)
-        except KeyError:
-            raise ValueError(f"Invalid input type '{input_type}'")
-
     def __repr__(cls) -> str:
-        return cls.__name__
+        return f"{cls.__name__} handler for {cls.package}input type"
 
     def __init__(self, args: argparse.Namespace) -> None:
         self.args = args
@@ -32,11 +28,11 @@ class DataHandler:
             if issubclass(self.__class__, DataHandler)
             else self.package
         )
-        self.helpers: importlib.ModuleType = importlib.import_module(
-            f"{package}.helpers"
+        self.paths_module: importlib.ModuleType = importlib.import_module(
+            f"{package}.paths"
         )
-        self.parser: importlib.ModuleType = importlib.import_module(
-            f"{package}.parser"
+        self.extractor_module: importlib.ModuleType = importlib.import_module(
+            f"{package}.extract"
         )
 
         self.paths: dict[str, list[Path]] = {
@@ -53,20 +49,20 @@ class DataHandler:
     def parse_data(
         self,
     ) -> tuple[list[dict[str, datetime.datetime | int]], list]:
-        viatom_data = self.parser.get_sleep_health_data(
+        sp02_data, bpm_data = self.extractor_module.extract_sleep_health_data(
             self.paths["sp02_paths"],
             self.paths["bpm_paths"],
             self.timezone,
             self.args.start_date,
             self.args.end_date,
         )
-        dreem_data = self.parser.get_sleep_data(
+        sleep_data = self.extractor_module.extract_sleep_data(
             self.paths["sleep_paths"],
             self.timezone,
             self.args.start_date,
             self.args.end_date,
         )
-        return viatom_data, dreem_data
+        return sp02_data, bpm_data, sleep_data
 
 
 class TakeoutHandler(DataHandler):
@@ -77,8 +73,10 @@ class TakeoutHandler(DataHandler):
             self.paths["sleep_paths"],
             self.paths["sp02_paths"],
             self.paths["bpm_paths"],
-        ) = self.helpers.get_paths(self.args.fitbit_path)
-        self.timezone = self.helpers.get_timezone(self.args.fitbit_path)
+        ) = self.paths_module.get_paths(self.args.fitbit_path)
+        self.timezone = time_helpers.get_timezone_from_profile(
+            self.args.fitbit_path
+        )
 
 
 class HealthSyncHandler(DataHandler):
@@ -89,7 +87,7 @@ class HealthSyncHandler(DataHandler):
             self.paths["sleep_paths"],
             self.paths["sp02_paths"],
             self.paths["bpm_paths"],
-        ) = self.helpers.get_paths(
+        ) = self.paths_module.get_paths(
             self.args.fitbit_path, self.args.date_format
         )
-        self.timezone = self.helpers.get_timezone()
+        self.timezone = time_helpers.get_local_timezone()
