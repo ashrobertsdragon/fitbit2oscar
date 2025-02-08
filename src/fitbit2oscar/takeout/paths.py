@@ -1,7 +1,5 @@
 from pathlib import Path
 
-from fitbit2oscar.read_file import read_csv_file
-
 
 def get_takeout_fitbit_path(input_path: str) -> Path:
     """Get path to Fitbit directory."""
@@ -51,12 +49,3 @@ def get_paths(fitbit_path: str) -> tuple[list[Path], list[Path], list[Path]]:
         get_sp02_paths(fitbit_path),
         get_bpm_paths(fitbit_path),
     )
-
-
-def get_timezone(fitbit_path: Path) -> str:
-    """Get timezone from profile file."""
-    for row in read_csv_file(profile_path(fitbit_path)):
-        timezone: str = row["timezone"]
-    if not timezone:
-        raise ValueError("Could not find timezone")
-    return timezone

@@ -1,19 +1,6 @@
-import time
-import datetime
 from pathlib import Path
 
 from fitbit2oscar._enums import DateFormat
-
-
-def get_timezone() -> datetime.timezone:
-    """Determine local timezone."""
-    local = time.localtime()
-    utc = time.gmtime()
-
-    day_offset = (utc.tm_yday - local.tm_yday) * 24
-    offset = local.tm_hour - utc.tm_hour + day_offset
-
-    return datetime.timezone(datetime.timedelta(hours=offset))
 
 
 def generate_filename(
