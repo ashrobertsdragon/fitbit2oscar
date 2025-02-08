@@ -3,9 +3,9 @@ import datetime
 import importlib
 import re
 from pathlib import Path
-from zoneinfo import ZoneInfo
 
 from fitbit2oscar._enums import InputType
+from fitbit2oscar.handlers import DataHandler
 
 
 def get_fitbit_path(input_path: Path, input_type: str) -> Path:
@@ -45,34 +45,9 @@ def process_date_arg(datestring: str, argtype: str) -> datetime.date:
     return adjustments[argtype](dateobj)
 
 
-def get_data(
-    args: argparse.Namespace,
-) -> tuple[list[dict[str, datetime.datetime | int]], list]:
-    package = args.input_type
-    helpers = importlib.import_module(f"{package}.helpers")
-    parser = importlib.import_module(f"{package}.parser")
-
-    if package == "takeout":
-        sleep_paths, sp02_paths, bpm_paths = helpers.get_paths(
-            args.fitbit_path
-        )
-        timezone = helpers.get_timezone(args.fitbit_path)
-        viatom_data = parser.get_sleep_health_data(
-            sp02_paths, bpm_paths, timezone, args.start_date, args.end_date
-        )
-        dreem_data = parser.get_sleep_data(
-            sleep_paths, timezone, args.start_date, args.end_date
-        )
-    elif package == "health_sync":
-        timezone = datetime._local_timezone()
-        sleep_paths, sp02_paths, bpm_paths = helpers.get_paths(
-            args.fitbit_path, args.date_format
-        )
-        viatom_data = parser.get_sleep_health_data(
-            sp02_paths, bpm_paths, args.start_date, args.end_date
-        )
-        dreem_data = parser.get_sleep_data(
-            sleep_paths, args.start_date, args.end_date
-        )
-
+def get_data(args: argparse.Namespace) -> tuple[list[dict], list]:
+    """Parse data using the appropriate handler."""
+    handler = DataHandler.create_client(args.input_type, args)
+    handler.get_paths_and_timezone()
+    viatom_data, dreem_data = handler.parse_data()
     return viatom_data, dreem_data
