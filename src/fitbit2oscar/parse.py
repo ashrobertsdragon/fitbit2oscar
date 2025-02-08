@@ -1,7 +1,7 @@
 import datetime
+from collections.abc import Generator
 
 from fitbit2oscar.time_helpers import convert_time_data
-
 from fitbit2oscar._types import SleepData, SleepEntry
 
 
@@ -85,7 +85,7 @@ def generate_hypnogram(data: SleepData) -> list[str]:
 
 
 def parse_sleep_data(
-    sleep_data: SleepEntry,
+    sleep_data_generator: Generator[SleepEntry],
 ) -> dict[str, datetime.datetime | int]:
     """
     Parses sleep data into a structured dictionary format.
@@ -107,25 +107,30 @@ def parse_sleep_data(
             stop times, and a hypnogram as a list of sleep stage names.
     """
 
-    return {
-        "start_time": sleep_data["start_time"],
-        "stop_time": sleep_data["stop_time"],
-        "sleep_onset_duration": convert_time_data(
-            sleep_data["duration"] / 60000
-        ),
-        "light_sleep_duration": convert_time_data(
-            sleep_data["levels"]["summary"]["light"]["minutes"]
-        ),
-        "deep_sleep_duration": convert_time_data(
-            sleep_data["levels"]["summary"]["deep"]["minutes"]
-        ),
-        "rem_sleep_duration": convert_time_data(
-            sleep_data["levels"]["summary"]["rem"]["minutes"]
-        ),
-        "wake_after_sleep_onset_duration": convert_time_data(
-            sleep_data["wake_after_sleep_onset_duration"]
-        ),
-        "number_awakenings": sleep_data["levels"]["summary"]["wake"]["count"],
-        "sleep_efficiency": sleep_data["sleep_efficiency"],
-        "hypnogram": f"[{','.join(generate_hypnogram(sleep_data["levels"]["data"]))}]",
-    }
+    return (
+        {
+            "start_time": sleep_data["start_time"],
+            "stop_time": sleep_data["stop_time"],
+            "sleep_onset_duration": convert_time_data(
+                sleep_data["duration"] / 60000
+            ),
+            "light_sleep_duration": convert_time_data(
+                sleep_data["levels"]["summary"]["light"]["minutes"]
+            ),
+            "deep_sleep_duration": convert_time_data(
+                sleep_data["levels"]["summary"]["deep"]["minutes"]
+            ),
+            "rem_sleep_duration": convert_time_data(
+                sleep_data["levels"]["summary"]["rem"]["minutes"]
+            ),
+            "wake_after_sleep_onset_duration": convert_time_data(
+                sleep_data["wake_after_sleep_onset_duration"]
+            ),
+            "number_awakenings": sleep_data["levels"]["summary"]["wake"][
+                "count"
+            ],
+            "sleep_efficiency": sleep_data["sleep_efficiency"],
+            "hypnogram": f"[{','.join(generate_hypnogram(sleep_data["levels"]["data"]))}]",
+        }
+        for sleep_data in sleep_data_generator
+    )
