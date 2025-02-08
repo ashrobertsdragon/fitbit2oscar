@@ -6,7 +6,7 @@ from pathlib import Path
 from loguru import logger
 
 import fitbit2oscar.helpers
-import fitbit2oscar.extract
+import fitbit2oscar.parse
 import fitbit2oscar.write_file
 
 
