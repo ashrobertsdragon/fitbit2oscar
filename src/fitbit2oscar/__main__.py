@@ -14,19 +14,11 @@ def process_data(args: argparse.Namespace) -> None:
     """Process Fitbit data and convert to OSCAR format."""
     script_start = datetime.datetime.now()
 
-    args.export_path.mkdir(exist_ok=True)
+    args.export_path.mkdir(parents=True, exist_ok=True)
 
-    sleep_paths, sp02_paths, bpm_paths = fitbit2oscar.helpers.get_paths(args)
-    timezone = fitbit2oscar.helpers.get_timezone(args.input_path)
+    viatom_data, dreem_data = fitbit2oscar.helpers.get_data(args)
 
-    viatom_data = fitbit2oscar.extract.extract_sleep_health_data(
-        sp02_paths, bpm_paths, timezone, args.start_date, args.end_date
-    )
     fitbit2oscar.write_file.create_viatom_file(args.output_path, viatom_data)
-
-    dreem_data = fitbit2oscar.extract.extract_sleep_data(
-        sleep_paths, timezone, args.start_date, args.end_date
-    )
     fitbit2oscar.write_file.write_dreem_file(args.output_path, dreem_data)
 
     finish_message = (
