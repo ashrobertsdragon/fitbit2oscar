@@ -15,7 +15,7 @@ SleepEntry: TypeAlias = dict[str, str | int | SleepLevels]
 
 def convert_timestamp(
     timestamp: str,
-    timezone: str,
+    timezone: str | None = None,
     timestamp_format: str = "%Y-%m-%dT%H:%M:%S",
 ) -> datetime.datetime:
     """
