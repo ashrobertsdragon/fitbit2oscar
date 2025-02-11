@@ -150,9 +150,11 @@ def extract_sleep_health_data(
     sp02_files: list[Path],
     bpm_files: list[Path],
     timezone: str,
-    start_date: datetime.date = datetime.date.fromordinal(1),
-    end_date: datetime.date = datetime.date.today(),
-) -> tuple[dict[str, datetime.datetime | int], dict[str, str | int]]:
+    start_date: datetime.date,
+    end_date: datetime.date,
+) -> tuple[
+    dict[str, datetime.datetime | int], dict[str, datetime.datetime | int]
+]:
     """
     Extracts sp02 and BPM data from CSV and JSON files.
 
@@ -193,3 +195,24 @@ def extract_sleep_health_data(
     }
 
     return sp02_data, bpm_data
+
+
+def extract_data(
+    sp02_files: list[Path],
+    bpm_files: list[Path],
+    sleep_files: list[Path],
+    timezone: str,
+    start_date: datetime.date,
+    end_date: datetime.date,
+) -> tuple[
+    dict[str, datetime.datetime | int],
+    dict[str, str | int],
+    Generator[SleepEntry, None, None],
+]:
+    sp02_data, bpm_data = extract_sleep_health_data(
+        sp02_files, bpm_files, timezone, start_date, end_date
+    )
+    sleep_data = extract_sleep_data(
+        read_file.read_json_file(sleep_files), start_date, end_date
+    )
+    return sp02_data, bpm_data, sleep_data
