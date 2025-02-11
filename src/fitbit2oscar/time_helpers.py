@@ -11,6 +11,7 @@ def convert_timestamp(
     timestamp: str,
     timezone: str | None = None,
     timestamp_format: str = "%Y-%m-%dT%H:%M:%S",
+    use_seconds: bool = True,
 ) -> datetime.datetime:
     """
     Parse timestamp and attach timezone info, converting from UTC if needed.
@@ -30,13 +31,15 @@ def convert_timestamp(
     dt = datetime.datetime.strptime(
         timestamp.removesuffix("Z"), timestamp_format
     )
-    tz = ZoneInfo(timezone)
+    tz = ZoneInfo(timezone) if timezone else get_local_timezone()
 
-    return (
+    local_dt = (
         dt.replace(tzinfo=datetime.timezone.utc).astimezone(tz)
         if timestamp.endswith("Z")
         else dt.replace(tzinfo=tz)
     )
+
+    return local_dt if use_seconds else dt.replace(second=0)
 
 
 def convert_time_data(minutes: int) -> str:
