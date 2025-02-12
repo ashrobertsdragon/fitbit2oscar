@@ -2,14 +2,14 @@ import datetime
 from collections.abc import Generator
 
 from fitbit2oscar.time_helpers import convert_time_data
-from fitbit2oscar._types import SleepData, SleepEntry
+from fitbit2oscar._types import SleepData, SleepEntry, SleepHealthData
 
 
 def parse_sleep_health_data(
     sp02_data: dict[datetime.datetime, int],
     bpm_data: dict[datetime.datetime, int],
     session_split: int = 15,
-) -> list[list[tuple[datetime.datetime, int, int]]]:
+) -> list[list[SleepHealthData]]:
     """
     Parses sleep health data into sessions.
 
@@ -27,18 +27,15 @@ def parse_sleep_health_data(
             Defaults to 15.
 
     Returns:
-        list[list[tuple[datetime.datetime, int, int]]]: A list of sessions,
-            where each session is a list of tuples containing timestamps,
-            sp02, and BPM values.
+        list[list[SleepHealthData]]: A list of sessions, where each session is
+            a list of tuples containing timestamps, sp02, and BPM values.
     """
     sessions = []
     session = []
 
     prev_timestamp = None
 
-    for timestamp in sorted(
-        set(sp02_data.keys()).intersection(bpm_data.keys())
-    ):
+    for timestamp in sorted(sp02_data.keys()).intersection(bpm_data.keys()):
         session.append((timestamp, sp02_data[timestamp], bpm_data[timestamp]))
         if (
             prev_timestamp
@@ -46,8 +43,11 @@ def parse_sleep_health_data(
             < timestamp
         ):
             sessions.append(session)
-            session = []
+            session.clear()
         prev_timestamp = timestamp
+
+    if session:
+        sessions.append(session)
 
     return sessions
 
