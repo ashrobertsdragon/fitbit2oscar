@@ -35,7 +35,7 @@ def generate_filename(
     try:
         date_format = DateFormat[date_type]
         return (
-            f"Sleep {DateFormat["DAILY"]} ?? ?? ?? {suffix}.{filetype}"
+            f"Sleep {date_format} ?? ?? ?? {suffix}.{filetype}"
             if data_type == "Sleep"
             else f"{data_type} {date_format} {suffix}.{filetype}"
         )
