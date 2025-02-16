@@ -112,19 +112,19 @@ def parse_sleep_data(
             "start_time": sleep_data["start_time"],
             "stop_time": sleep_data["stop_time"],
             "sleep_onset_duration": convert_time_data(
-                sleep_data["duration"] / 60000
+                minutes=sleep_data["duration"] / 60000
             ),
             "light_sleep_duration": convert_time_data(
-                sleep_data["levels"]["summary"]["light"]["minutes"]
+                minutes=sleep_data["levels"]["summary"]["light"]["minutes"]
             ),
             "deep_sleep_duration": convert_time_data(
-                sleep_data["levels"]["summary"]["deep"]["minutes"]
+                minutes=sleep_data["levels"]["summary"]["deep"]["minutes"]
             ),
             "rem_sleep_duration": convert_time_data(
-                sleep_data["levels"]["summary"]["rem"]["minutes"]
+                minutes=sleep_data["levels"]["summary"]["rem"]["minutes"]
             ),
             "wake_after_sleep_onset_duration": convert_time_data(
-                sleep_data["wake_after_sleep_onset_duration"]
+                minutes=sleep_data["wake_after_sleep_onset_duration"]
             ),
             "number_awakenings": sleep_data["levels"]["summary"]["wake"][
                 "count"

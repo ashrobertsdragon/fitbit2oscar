@@ -4,6 +4,7 @@ import time
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from fitbit2oscar.exceptions import FitbitConverterValueError
 from fitbit2oscar.read_file import read_csv_file, read_json_file
 from fitbit2oscar.takeout.paths import profile_path
 
@@ -45,10 +46,21 @@ def convert_timestamp(
     return local_dt if use_seconds else dt.replace(second=0)
 
 
-def convert_time_data(minutes: int) -> str:
-    """Converts time in minutes to a string in HH:MM:SS format."""
+def convert_time_data(minutes: int = 0, seconds: int = 0) -> str:
+    """
+    Converts time to a string in HH:MM:SS format.
+
+    Args:
+        minutes (int): Number of minutes. Defaults to 0.
+        seconds (int): Number of seconds. Defaults to 0.
+
+    Returns:
+        str: Time in HH:MM:SS format.
+    """
+    if not minutes:
+        minutes = divmod(seconds, 60)
     hours, mins = divmod(minutes, 60)
-    return f"{hours:02d}:{mins:02d}:00"
+    return f"{hours:02d}:{mins:02d}:{seconds:02d}"
 
 
 def get_local_timezone() -> datetime.timezone:
@@ -82,13 +94,13 @@ def get_timezone_from_profile(fitbit_path: Path) -> datetime.timezone:
         timezone: str = row["timezone"]
     if not timezone:
         logger.error("Could not find timezone in profile file")
-        raise ValueError("Could not find timezone")
+        raise FitbitConverterValueError("Could not find timezone")
     region = timezone.split("/")[0]
     if region in ["US", "United States", "U.S."]:
         timezone.replace(region, "America")
 
-    iana_zones = get_timezone_data("tz_data.json")
-    ms_zones = get_timezone_data("ms_zones.json")
+    iana_zones: dict[str, str] = get_timezone_data("tz_data.json")
+    ms_zones: dict[str, dict[str, str]] = get_timezone_data("ms_zones.json")
 
     if timezone in iana_zones:
         logger.debug(f"Using IANA time zone for {timezone}")
