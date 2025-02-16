@@ -1,33 +1,15 @@
 import argparse
 import datetime
+import importlib
 import logging
+import re
 from pathlib import Path
 
-import fitbit2oscar.helpers as helper
-import fitbit2oscar.parse
-import fitbit2oscar.write_file
-from fitbit2oscar._enums import DateFormat
+import fitbit2oscar.process_data as run
+from fitbit2oscar._enums import DateFormat, InputType
 
 
 logger = logging.getLogger(__name__)
-
-
-def process_data(args: argparse.Namespace) -> None:
-    """Process Fitbit data and convert to OSCAR format."""
-    script_start = datetime.datetime.now()
-
-    args.export_path.mkdir(parents=True, exist_ok=True)
-
-    viatom_data, dreem_data = fitbit2oscar.helpers.get_data(args)
-    viatom_chunks = fitbit2oscar.helpers.chunk_viatom_data(viatom_data)
-
-    fitbit2oscar.write_file.create_viatom_file(args.output_path, viatom_chunks)
-    fitbit2oscar.write_file.write_dreem_file(args.output_path, dreem_data)
-
-    finish_message = (
-        f"Finished processing in {datetime.datetime.now() - script_start}"
-    )
-    logger.info(finish_message)
 
 
 def configure_logger(args: argparse.Namespace) -> None:
@@ -47,21 +29,56 @@ def configure_logger(args: argparse.Namespace) -> None:
     logger.setLevel(getattr(logging, args.level))
 
 
+def get_fitbit_path(input_path: Path, input_type: str) -> Path:
+    try:
+        InputType(input_type)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"Invalid structure '{input_type}', must be one of {list(InputType)}"
+        )
+    module = f"fitbit2oscar.{input_type}.paths"
+    importlib.import_module(module)
+    func = f"get_{input_type}_fitbit_path"
+    return getattr(module, func)(input_path)
+
+
+def process_date_arg(datestring: str, argtype: str) -> datetime.date:
+    datematch = re.match(r"(\d{4})-(\d{1,2})-(\d{1,2})", datestring)
+    if datematch is None:
+        raise argparse.ArgumentTypeError(
+            f"Invalid {argtype} date argument '{datestring}', must match YYYY-M-D format"
+        )
+    dateobj = datetime.date(
+        year=int(datematch.group(1)),
+        month=int(datematch.group(2)),
+        day=int(datematch.group(3)),
+    )
+    if not (datetime.date.today() >= dateobj >= datetime.date(2010, 1, 1)):
+        raise argparse.ArgumentTypeError(
+            f"Invalid {argtype} date {datestring}, must be on or before today's date and no older than 2010-01-01."
+        )
+
+    adjustments = {
+        "start": lambda d: d - datetime.timedelta(days=1),
+        "end": lambda d: d + datetime.timedelta(days=1),
+        "file": lambda d: d,
+    }
+    return adjustments[argtype](dateobj)
+
+
 class InputPath(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None) -> None:
         input_arg = getattr(namespace, "input_source", None)
         if not input_arg:
             raise argparse.ArgumentError(
-                parser,
+                parser.input_source,
                 f"{option_string} requires an input type to be set (e.g., -T, -H).",
             )
         input_type = {
             "-T": "takeout",
             "-H": "health_sync",
         }
-        fitbit_path = helper.get_fitbit_path(
-            Path(values), input_type[input_arg]
-        )
+        fitbit_path = get_fitbit_path(Path(values), input_type[input_arg])
         setattr(namespace, self.dest, fitbit_path)
 
 
@@ -71,8 +88,9 @@ class StoreLogFile(argparse.Action):
             logger.error(
                 "Verbosity must be set to at least 'INFO' to log to a file."
             )
-            parser.error(
-                f"{option_string} requires a verbosity level to be set (e.g., --verbose, --very-verbose, -v, -vv)."
+            argparse.ArgumentError(
+                parser.log_file,
+                "Verbosity level must be set (e.g., --verbose, --very-verbose, -v, -vv).",
             )
 
         setattr(namespace, self.dest, values)
@@ -83,13 +101,13 @@ class DateFormatValidator(argparse.Action):
         try:
             if not getattr(namespace, "input_source", None) == "-H":
                 raise argparse.ArgumentError(
-                    namespace.input_source,
+                    parser.input_source,
                     f"{option_string} is not valid for input type {namespace.input_source}",
                 )
             DateFormat(values)
         except KeyError:
             raise argparse.ArgumentError(
-                parser,
+                parser.date_format,
                 f"{option_string} must be one of {list(DateFormat)}",
             )
         setattr(namespace, self.dest, values)
@@ -102,18 +120,18 @@ def create_parser() -> argparse.Namespace:
         description="Converts Fitbit data to OSCAR format",
     )
 
-    parser.add_argument(
+    input_source = parser.add_argument(  # noqa: F841
         "input_source",
         help="Source of Fitbit data (-T for Takeout, -H for Health Sync)/ Defaults to -T because Health Sync support is experimental",
         choices=["-T", "-H"],
         default="-T",
     )
 
-    parser.add_argument(
+    fitbit_path = parser.add_argument(  # noqa: F841
         "-i", "--fitbit-path", help="Path to Fitbit data", action=InputPath
     )
 
-    parser.add_argument(
+    export_path = parser.add_argument(  # noqa: F841
         "-o",
         "--export-path",
         help="Path to export files to, defaults to 'export' in current directory",
@@ -122,20 +140,20 @@ def create_parser() -> argparse.Namespace:
     )
 
     dates = parser.add_argument_group("Date options")
-    dates.add_argument(
+    start_date = dates.add_argument(  # noqa: F841
         "-s",
         "--start-date",
         metavar="<YYYY-M-D>",
-        type=helper.process_date_arg,
+        type=process_date_arg,
         help="Optional start date for data",
         default=datetime.date(2010, 1, 1),
     )
 
-    dates.add_argument(
+    end_date = dates.add_argument(  # noqa: F841
         "-e",
         "--end-date",
         metavar="<YYYY-M-D>",
-        type=helper.process_date_arg,
+        type=process_date_arg,
         help="Optional end date for data",
         default=datetime.date.today(),
     )
@@ -143,15 +161,15 @@ def create_parser() -> argparse.Namespace:
     verbosity = parser.add_argument_group(title="Logging options")
 
     verbosity_args = verbosity.add_mutually_exclusive_group()
-    verbosity_args.add_argument(
-        "-v",
+    verbose = verbosity_args.add_argument(  # noqa: F841
+        "-v",  # noqa: F841
         "--verbose",
         help="Set verbose logging",
         action="store_const",
         const="INFO",
         dest="level",
     )
-    verbosity.add_argument(
+    very_verbose = verbosity.add_argument(  # noqa: F841
         "-vv",
         "--very-verbose",
         help="Set verbose logging",
@@ -159,7 +177,7 @@ def create_parser() -> argparse.Namespace:
         const="DEBUG",
         dest="level",
     )
-    verbosity.add_argument(
+    log_file = verbosity.add_argument(  # noqa: F841
         "-l",
         "--logfile",
         metavar="<filename.log>",
@@ -169,7 +187,7 @@ def create_parser() -> argparse.Namespace:
         type=Path,
     )
 
-    parser.add_argument(
+    date_formate = parser.add_argument(  # noqa: F841
         "-f",
         "--date-format",
         help="Date string format to use for Health Sync for input",
@@ -192,12 +210,8 @@ def main() -> None:
         )
 
     try:
-        process_data(args)
+        run.process_data(args)
     except AssertionError as e:
         logger.fatal(f"Error processing data: {e}")
     except Exception as e:
         logger.exception(f"Unhandled exception: {e}")
-
-
-if __name__ == "__main__":
-    main()
