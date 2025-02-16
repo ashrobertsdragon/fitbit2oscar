@@ -11,6 +11,13 @@ from fitbit2oscar.takeout.paths import profile_path
 logger = logging.getLogger("fitbit2oscar")
 
 
+def calculate_duration(
+    start_time: datetime.datetime, stop_time: datetime.datetime
+) -> int:
+    """Calculate the duration of the sleep session in seconds."""
+    return int((stop_time - start_time).total_seconds())
+
+
 def convert_timestamp(
     timestamp: str,
     timezone: str | None = None,
@@ -61,6 +68,12 @@ def convert_time_data(minutes: int = 0, seconds: int = 0) -> str:
         minutes = divmod(seconds, 60)
     hours, mins = divmod(minutes, 60)
     return f"{hours:02d}:{mins:02d}:{seconds:02d}"
+
+
+def format_timestamp(timestamp: str, timestamp_format: str) -> str:
+    """Formats the timestamp for the sleep entry."""
+    dt = convert_timestamp(timestamp, timestamp_format=timestamp_format)
+    return dt.strftime(timestamp_format)
 
 
 def get_local_timezone() -> datetime.timezone:
