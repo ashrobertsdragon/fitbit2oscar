@@ -6,6 +6,8 @@ from pathlib import Path
 import fitbit2oscar.helpers as helper
 import fitbit2oscar.parse
 import fitbit2oscar.write_file
+from fitbit2oscar._enums import DateFormat
+
 
 logger = logging.getLogger(__name__)
 
@@ -45,19 +47,22 @@ def configure_logger(args: argparse.Namespace) -> None:
     logger.setLevel(getattr(logging, args.level))
 
 
-class PackageVersionAction(argparse.Action):
-    def __call__(self, parser, namespace, values, option_string) -> None:
-        package_map = {
-            "-H": "health_sync",
+class InputPath(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None) -> None:
+        input_arg = getattr(namespace, "input_source", None)
+        if not input_arg:
+            raise argparse.ArgumentError(
+                parser,
+                f"{option_string} requires an input type to be set (e.g., -T, -H).",
+            )
+        input_type = {
             "-T": "takeout",
-            "--health_sync": "health_sync",
-            "--takeout": "takeout",
+            "-H": "health_sync",
         }
-        namespace.input_type = package_map[option_string]
-        path = helper.get_fitbit_path(
-            input_path=values, input_type=namespace.input_type
+        fitbit_path = helper.get_fitbit_path(
+            Path(values), input_type[input_arg]
         )
-        setattr(namespace, self.dest, path)
+        setattr(namespace, self.dest, fitbit_path)
 
 
 class StoreLogFile(argparse.Action):
@@ -73,6 +78,23 @@ class StoreLogFile(argparse.Action):
         setattr(namespace, self.dest, values)
 
 
+class DateFormatValidator(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string) -> None:
+        try:
+            if not getattr(namespace, "input_source", None) == "-H":
+                raise argparse.ArgumentError(
+                    namespace.input_source,
+                    f"{option_string} is not valid for input type {namespace.input_source}",
+                )
+            DateFormat(values)
+        except KeyError:
+            raise argparse.ArgumentError(
+                parser,
+                f"{option_string} must be one of {list(DateFormat)}",
+            )
+        setattr(namespace, self.dest, values)
+
+
 def create_parser() -> argparse.Namespace:
     """Create an argument parser for the command line interface."""
     parser = argparse.ArgumentParser(
@@ -80,21 +102,15 @@ def create_parser() -> argparse.Namespace:
         description="Converts Fitbit data to OSCAR format",
     )
 
-    input = parser.add_argument_group("Input path options")
-    input_path = input.add_mutually_exclusive_group(required=True)
-    input_path.add_argument(
-        "-T",
-        "--takeout-path",
-        help="Path to Takeout folder containing 'Fitbit' or to Takeout folder",
-        action=PackageVersionAction,
-        dest="fitbit_path",
+    parser.add_argument(
+        "input_source",
+        help="Source of Fitbit data (-T for Takeout, -H for Health Sync)/ Defaults to -T because Health Sync support is experimental",
+        choices=["-T", "-H"],
+        default="-T",
     )
-    input_path.add_argument(
-        "-H",
-        "--health-sync-path",
-        help="Path to Health Sync folder",
-        action=PackageVersionAction,
-        dest="fitbit_path",
+
+    parser.add_argument(
+        "-i", "--fitbit-path", help="Path to Fitbit data", action=InputPath
     )
 
     parser.add_argument(
@@ -153,6 +169,15 @@ def create_parser() -> argparse.Namespace:
         type=Path,
     )
 
+    parser.add_argument(
+        "-f",
+        "--date-format",
+        help="Date string format to use for Health Sync for input",
+        default="DAILY",
+        metavar="<DAILY|WEEKLY|MONTHLY>",
+        choices=["DAILY", "WEEKLY", "MONTHLY"],
+        action=DateFormatValidator,
+    )
     return parser.parse_args()
 
 
