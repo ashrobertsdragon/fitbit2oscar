@@ -1,11 +1,13 @@
 from pathlib import Path
 
+from fitbit2oscar.exceptions import FitbitConverterDataError
+
 
 def get_takeout_fitbit_path(input_path: str) -> Path:
     """Get path to Fitbit directory."""
     fitbit = Path(input_path)
     if not (fitbit.exists() and fitbit.is_dir()):
-        raise FileExistsError(f"{input_path} is not a valid path")
+        raise FitbitConverterDataError(f"{input_path} is not a valid path")
     candidates = [
         fitbit / "Fitbit",
         fitbit / "Takeout" / "Fitbit",
@@ -13,7 +15,7 @@ def get_takeout_fitbit_path(input_path: str) -> Path:
     for path in candidates:
         if path.exists() and path.is_dir():
             return path
-    raise FileExistsError(f"{input_path} is not a valid path")
+    raise FitbitConverterDataError(f"{input_path} is not a valid path")
 
 
 def profile_path(fitbit_path: Path) -> Path:

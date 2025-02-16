@@ -4,6 +4,8 @@ import struct
 from collections.abc import Generator
 from pathlib import Path
 
+from fitbit2oscar.exceptions import FitbitConverterDataError
+
 
 def prepare_dreem_data(
     dreem_data: Generator[dict[str, str | int]],
@@ -102,7 +104,7 @@ def create_viatom_file(
     """
     for datum in data:
         if len(datum) > 4095:
-            raise RuntimeError(
+            raise FitbitConverterDataError(
                 f"Data chunk ({data[0][0]}, {data[-1][0]}) too long ({len(data)})!"
             )
 

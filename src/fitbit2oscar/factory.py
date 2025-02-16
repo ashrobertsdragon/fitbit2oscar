@@ -1,5 +1,6 @@
 import argparse
 
+from fitbit2oscar.exceptions import FItbitConverterValueError
 from fitbit2oscar.handlers import DataHandler
 
 
@@ -11,4 +12,6 @@ class DataHandlerFactory:
         try:
             return DataHandler._registry[input_type](args)
         except KeyError:
-            raise ValueError(f"Invalid input type '{input_type}'")
+            raise FItbitConverterValueError(
+                f"Invalid input type '{input_type}'"
+            )

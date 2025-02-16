@@ -1,6 +1,10 @@
 from pathlib import Path
 
 from fitbit2oscar._enums import DateFormat
+from fitbit2oscar.exceptions import (
+    FitbitConverterDataError,
+    FitbitConverterValueError,
+)
 
 
 def generate_filename(
@@ -26,27 +30,31 @@ def generate_filename(
             "{data_type} {date_format} {suffix}.{filetype}"
 
     Raises:
-        ValueError: If date_type is not a valid DateFormat.
+        FitbitConverterValueError: If date_type is not a valid DateFormat.
     """
     try:
         date_format = DateFormat[date_type]
-        return f"{data_type} {date_format} {suffix}.{filetype}"
+        return (
+            f"Sleep {DateFormat["DAILY"]} ?? ?? ?? {suffix}.{filetype}"
+            if data_type == "Sleep"
+            else f"{data_type} {date_format} {suffix}.{filetype}"
+        )
     except KeyError:
-        raise ValueError(f"Invalid date format '{date_type}'")
+        raise FitbitConverterValueError(f"Invalid date format '{date_type}'")
 
 
 def get_health_sync_fitbit_path(input_path: str) -> Path:
     """Get path to Fitbit directory."""
     fitbit = Path(input_path)
     if not (fitbit.exists() and fitbit.is_dir()):
-        raise FileExistsError(f"{input_path} is not a valid path")
+        raise FitbitConverterDataError(f"{input_path} is not a valid path")
     return fitbit
 
 
 def get_sleep_paths(fitbit_path: Path, fmt: str) -> list[Path]:
     """Get paths to sleep data JSON files."""
     sleep = fitbit_path / "Health Sync Sleep"
-    pattern = generate_filename("Sleep", fmt)
+    pattern = generate_filename("Sleep", "DAILY")
     return list(sleep.glob(pattern))
 
 
