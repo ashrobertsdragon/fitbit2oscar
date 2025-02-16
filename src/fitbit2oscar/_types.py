@@ -7,3 +7,4 @@ SleepLevels: TypeAlias = dict[str, SleepSummary | SleepData]
 SleepEntry: TypeAlias = dict[str, str | int | SleepLevels]
 
 SleepHealthData: TypeAlias = tuple[datetime, int, int]
+VitalsData: TypeAlias = tuple[datetime, int]
