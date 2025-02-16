@@ -3,18 +3,23 @@ from collections.abc import Generator
 from pathlib import Path
 
 import fitbit2oscar.read_file as read_file
-from fitbit2oscar.time_helpers import convert_timestamp
+from fitbit2oscar.time_helpers import (
+    calculate_duration,
+    convert_timestamp,
+    format_timestamp,
+)
 from fitbit2oscar._types import (
     SleepEntry,
     SleepLevels,
     SleepSummary,
     SleepData,
+    VitalsData,
 )
 
 
 def extract_sp02_data(
     csv_rows: Generator[dict[str, str]],
-) -> Generator[tuple[datetime.datetime, int], None, None]:
+) -> Generator[VitalsData, None, None]:
     """
     Extracts timestamp and sp02 values from CSV rows.
 
@@ -42,7 +47,7 @@ def extract_sp02_data(
 
 def extract_bpm_data(
     csv_rows: Generator[dict[str, str]],
-) -> Generator[tuple[datetime.datetime, int], None, None]:
+) -> Generator[VitalsData, None, None]:
     """
     Extracts timestamp and BPM values from CSV rows.
 
@@ -81,12 +86,6 @@ def is_valid_sleep_entry(
     )
 
 
-def format_timestamp(timestamp: str, timestamp_format: str) -> str:
-    """Formats the timestamp for the sleep entry."""
-    dt = convert_timestamp(timestamp, timestamp_format=timestamp_format)
-    return dt.strftime(timestamp_format)
-
-
 def calculate_stop_time(
     csv_rows: list[dict[str, str]], timestamp_format: str
 ) -> datetime.datetime:
@@ -95,13 +94,6 @@ def calculate_stop_time(
     dt = convert_timestamp(stop_row["Date"], timestamp_format)
     duration = int(stop_row["Duration in seconds"])
     return dt + datetime.timedelta(seconds=duration)
-
-
-def calculate_duration(
-    start_time: datetime.datetime, stop_time: datetime.datetime
-) -> int:
-    """Calculate the duration of the sleep session in seconds."""
-    return int((stop_time - start_time).total_seconds())
 
 
 def process_sleep_data(
@@ -155,7 +147,7 @@ def process_sleep_data(
 
 
 def extract_sleep_data(
-    csv_rows_generator: Generator[list[dict[str, str]]],
+    csv_data: Generator[list[dict[str, str]]],
     start_date: datetime.date,
     end_date: datetime.date,
 ) -> Generator[SleepEntry, None, None]:
@@ -183,7 +175,7 @@ def extract_sleep_data(
     date_format = "%Y.%m.%d"
     time_format = "%H:%M"
 
-    for csv_rows in csv_rows_generator:
+    for csv_rows in csv_data:
         if not is_valid_sleep_entry(csv_rows, start_date, end_date):
             continue
         timestamp = format_timestamp(csv_rows[0]["Date"], date_format)
@@ -209,57 +201,38 @@ def extract_sleep_data(
         }
 
 
-def extract_sleep_health_data(
-    sp02_files: list[Path],
-    bpm_files: list[Path],
-    timezone: str,
-    start_date: datetime.date,
-    end_date: datetime.date,
-) -> tuple[
-    dict[str, datetime.datetime | int], dict[str, datetime.datetime | int]
-]:
-    """
-    Extracts sp02 and BPM data from CSV and JSON files.
-
-    Creates a list of sessions, where each session is a list of dictionaries
-    containing timestamp, sp02, and BPM from Fitbit data in CSV files, and
-    sessions are periods of time with at least 15 minutes since the last data
-    point.
-
-    Args:
-        sp02_files (list[Path]): List of paths to CSV files containing Fitbit
-            sp02 data.
-        bpm_files (list[Path]): List of paths to CSV files containing Fitbit
-            BPM data.
-
-    Returns:
-        list[list[tuple[str, datetime.datetime | int]]]: List of session lists,
-            each containing tuples containing Sp02 and heart rate for
-            given timestamp.
-    """
-    sp02_data = {
-        timestamp: sp02
+def collect_sp02_data(
+    sp02_files: list[Path], start_date: datetime.date, end_date: datetime.date
+) -> Generator[VitalsData, None, None]:
+    """Yield SpO2 data from CSV files for a given date range."""
+    yield (
+        (timestamp, sp02)
         for sp02_file in sp02_files
         for timestamp, sp02 in extract_sp02_data(
             read_file.read_csv_file(sp02_file)
         )
         if start_date < timestamp.date() < end_date
-    }
-    bpm_data = {
-        timestamp: bpm
+    )
+
+
+def collect_bpm_data(
+    bpm_files: list[Path], start_date: datetime.date, end_date: datetime.date
+) -> Generator[VitalsData, None, None]:
+    """Yield BPM data from CSV files for a given date range."""
+    yield (
+        (timestamp, bpm)
         for bpm_file in bpm_files
         for timestamp, bpm in extract_bpm_data(
             read_file.read_csv_file(bpm_file)
         )
         if start_date < timestamp.date() < end_date
-    }
-
-    return sp02_data, bpm_data
+    )
 
 
-def create_csv_generator(
+def collect_sleep_data(
     sleep_files: list[Path],
 ) -> Generator[list[dict[str, str]], None, None]:
+    """Yield sleep data from CSV files."""
     yield (read_file.read_csv_file(sleep_file) for sleep_file in sleep_files)
 
 
@@ -267,19 +240,41 @@ def extract_data(
     sp02_files: list[Path],
     bpm_files: list[Path],
     sleep_files: list[Path],
-    timezone: str,
     start_date: datetime.date,
     end_date: datetime.date,
 ) -> tuple[
-    dict[str, datetime.datetime | int],
-    dict[str, str | int],
+    Generator[VitalsData, None, None],
+    Generator[VitalsData, None, None],
     Generator[SleepEntry, None, None],
 ]:
-    sp02_data, bpm_data = extract_sleep_health_data(
-        sp02_files, bpm_files, start_date, end_date
+    """
+    Extract sleep and vitals data from CSV files.
+
+    Args:
+        sp02_files (list[Path]): List of paths to CSV files containing SpO2
+            data.
+        bpm_files (list[Path]): List of paths to CSV files containing BPM
+            data.
+        sleep_files (list[Path]): List of paths to CSV files containing sleep
+            data.
+        start_date (datetime.date): The earliest date for a valid sleep entry.
+        end_date (datetime.date): The latest date for a valid sleep entry.
+
+    Returns:
+        tuple[
+            Generator[VitalsData, None, None],
+            Generator[VitalsData, None, None],
+            Generator[SleepEntry, None, None]
+        ]: Tuple of generators containing sleep and vitals data.
+    """
+    sp02_data: Generator[VitalsData[datetime.datetime | int], None, None] = (
+        collect_sp02_data(sp02_files, start_date, end_date)
+    )
+    bpm_data: Generator[VitalsData[datetime.datetime | int], None, None] = (
+        collect_bpm_data(bpm_files, start_date, end_date)
     )
 
-    sleep_data = extract_sleep_data(
-        create_csv_generator(sleep_files), start_date, end_date
+    sleep_data: Generator[SleepEntry, None, None] = extract_sleep_data(
+        collect_sleep_data(sleep_files), start_date, end_date
     )
     return sp02_data, bpm_data, sleep_data
