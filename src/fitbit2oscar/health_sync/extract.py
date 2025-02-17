@@ -1,4 +1,5 @@
 import datetime
+import logging
 from collections.abc import Generator
 from pathlib import Path
 
@@ -16,6 +17,8 @@ from fitbit2oscar._types import (
     SleepData,
     VitalsData,
 )
+
+logger = logging.getLogger("fitbit2oscar")
 
 
 def extract_sp02_data(
@@ -37,13 +40,24 @@ def extract_sp02_data(
         Generator[tuple[datetime.datetime, int], None, None]: Generator of
             tuples containing timestamp and valid sp02 values.
     """
+    extracted_count = 0
+    valid_count = 0
+    logger.debug("Showing every 15th Sp02 entry")
     for row in csv_rows:
         timestamp: datetime.datetime = convert_timestamp(
             row["Date"], use_seconds=False
         )
         sp02: int = round(float(row["Oxygen Saturation"]))
+        extracted_count += 1
         if sp02 >= 80:
+            valid_count += 1
+            if valid_count % 15 == 0:
+                logger.debug(f"{timestamp}: Sp02 {sp02}")
             yield timestamp, sp02
+    logger.info(
+        f"Sp02 Extraction Summary: Extracted {extracted_count} entries, "
+        f"{valid_count} valid entries for {timestamp.date()}."
+    )
 
 
 def extract_bpm_data(
@@ -63,12 +77,22 @@ def extract_bpm_data(
         Generator[tuple[datetime.datetime, int], None, None]: Generator of
             tuples containing timestamp and valid heart rate values.
     """
+    extraction_count = 0
+    logger.debug("Showing every 15th Heart rate entry")
     for row in csv_rows:
         timestamp: datetime.datetime = convert_timestamp(
             row["Date"], use_seconds=False
         )
         bpm: int = int(row["Heart rate"])
+        extraction_count += 1
+        if extraction_count % 15 == 0:
+            logger.debug(f"{timestamp}: BPM {bpm}")
         yield timestamp, bpm
+
+    logger.info(
+        f"BPM Extraction Summary: Extracted {extraction_count} entries for "
+        f"{timestamp.date()}."
+    )
 
 
 def is_valid_sleep_entry(
