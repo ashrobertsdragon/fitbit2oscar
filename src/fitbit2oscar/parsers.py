@@ -150,7 +150,7 @@ def generate_hypnogram(data: SleepData) -> list[str]:
 
 def parse_sleep_data(
     sleep_data_generator: Generator[SleepEntry],
-) -> dict[str, datetime.datetime | int]:
+) -> Generator[dict[str, datetime.datetime | int], None, None]:
     """
     Parses sleep data into a structured dictionary format.
 
@@ -165,14 +165,14 @@ def parse_sleep_data(
             keys for 'duration', 'levels', 'startTime', 'endTime',
             'wake_after_sleep_onset_duration', and 'sleep_efficiency'.
 
-    Returns:
+    Yields:
         dict[str, str | int]: A dictionary containing parsed
             sleep metrics, including durations in HH:MM:SS format, start and
             stop times, and a hypnogram as a list of sleep stage names.
     """
 
-    return (
-        {
+    for sleep_data in sleep_data_generator:
+        yield ({
             "start_time": sleep_data["start_time"],
             "stop_time": sleep_data["stop_time"],
             "sleep_onset_duration": convert_time_data(
@@ -195,6 +195,4 @@ def parse_sleep_data(
             ],
             "sleep_efficiency": sleep_data["sleep_efficiency"],
             "hypnogram": f"[{','.join(generate_hypnogram(sleep_data["levels"]["data"]))}]",
-        }
-        for sleep_data in sleep_data_generator
-    )
+        })
