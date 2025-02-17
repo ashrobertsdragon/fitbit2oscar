@@ -39,11 +39,17 @@ def parse_data(
     sp02_generator: Generator[VitalsData],
     bpm_generator: Generator[VitalsData],
     sleep_generator: Generator[SleepEntry],
-):
-    viatom_data: list[list[SleepHealthData]] = parse_sleep_health_data(
-        sp02_generator, bpm_generator
+) -> tuple[
+    Generator[list[SleepHealthData], None, None],
+    Generator[dict[str, datetime | int]],
+]:
+    """Parse data into viatom and dreem formats."""
+    viatom_data: Generator[list[SleepHealthData], None, None] = (
+        parse_sleep_health_data(sp02_generator, bpm_generator)
     )
-    dreem_data: dict[str, datetime | int] = parse_sleep_data(sleep_generator)
+    dreem_data: Generator[dict[str, datetime | int]] = parse_sleep_data(
+        sleep_generator
+    )
     return viatom_data, dreem_data
 
 
