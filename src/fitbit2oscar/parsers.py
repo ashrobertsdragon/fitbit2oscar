@@ -1,6 +1,6 @@
 import datetime
+import logging
 from collections.abc import Callable, Generator
-from functools import partial
 
 from fitbit2oscar.time_helpers import convert_time_data
 from fitbit2oscar._types import (
@@ -10,38 +10,40 @@ from fitbit2oscar._types import (
     VitalsData,
 )
 
-
-def get_next_item(
-    item: Generator[VitalsData],
-) -> VitalsData:
-    """Returns the next item from a generator."""
-    return next(item)
+logger = logging.getLogger("fitbit2oscar")
 
 
-def next_sp02(
-    sp02_data: Generator[VitalsData, None, None], bpm: VitalsData
-) -> tuple[VitalsData, VitalsData]:
+def next_spo2(
+    spo2_data: Generator[VitalsData, None, None], bpm: VitalsData
+) -> Generator[tuple[VitalsData, VitalsData]]:
     """Returns the next SpO2 and current BPM values."""
-    return get_next_item(sp02_data), bpm
+    yield from ((spo2, bpm) for spo2 in spo2_data)
 
 
 def next_bpm(
-    bpm_data: Generator[VitalsData, None, None], sp02: VitalsData
-) -> tuple[VitalsData, VitalsData]:
+    bpm_data: Generator[VitalsData, None, None], spo2: VitalsData
+) -> Generator[tuple[VitalsData, VitalsData]]:
     """Returns the next BPM and current SpO2 values."""
-    return sp02, get_next_item(bpm_data)
+    yield from ((spo2, bpm) for bpm in bpm_data)
 
 
 def next_all(
-    sp02_data: Generator[VitalsData, None, None],
+    spo2_data: Generator[VitalsData, None, None],
     bpm_data: Generator[VitalsData, None, None],
-) -> tuple[VitalsData, VitalsData]:
+) -> Generator[tuple[VitalsData, VitalsData]]:
     """Returns the next SpO2 and BPM values."""
-    return get_next_item(sp02_data), get_next_item(bpm_data)
+    yield from zip(spo2_data, bpm_data)
+
+
+def next_none(
+    spo2: VitalsData, bpm: VitalsData
+) -> Generator[tuple[VitalsData, VitalsData]]:
+    """Returns the current spo2 and BPM values"""
+    yield (spo2, bpm)
 
 
 def sync_timestamps(
-    sp02_data: Generator[VitalsData], bpm_data: Generator[VitalsData]
+    spo2_data: Generator[VitalsData], bpm_data: Generator[VitalsData]
 ) -> Generator[tuple[VitalsData, VitalsData], None, None]:
     """
     Synchronizes timestamps between SpO2 and BPM data.
@@ -52,7 +54,7 @@ def sync_timestamps(
     values.
 
     Args:
-        sp02_data (Generator[VitalsData, None, None]): A generator of tuples
+        spo2_data (Generator[VitalsData, None, None]): A generator of tuples
             containing timestamps and SpO2 values.
         bpm_data (Generator[VitalsData, None, None]): A generator of tuples
             containing timestamps and BPM values.
@@ -61,21 +63,32 @@ def sync_timestamps(
         Generator[tuple[VitalsData, VitalsData], None, None]: Tuples
             containing synchronized timestamps and SpO2 and BPM values.
     """
-    sp02 = get_next_item(sp02_data)
-    bpm = get_next_item(bpm_data)
+    spo2_count = 0
+    bpm_count = 0
 
-    comparison: dict[
-        int,
-        tuple[Callable, Callable],
-    ] = {
-        -1: partial(next_sp02, sp02_data, bpm),
-        0: partial(next_all, sp02_data, bpm_data),
-        1: partial(next_bpm, bpm_data, sp02),
-    }
+    for spo2, bpm in next_all(spo2_data, bpm_data):
+        comparison: dict[
+            int,
+            tuple[Callable, Callable],
+        ] = {
+            -1: lambda: next_spo2(spo2_data, bpm),
+            0: lambda: next_none(spo2, bpm),
+            1: lambda: next_bpm(bpm_data, spo2),
+        }
+        timestamps = (spo2.timestamp > bpm.timestamp) - (
+            spo2.timestamp < bpm.timestamp
+        )
+        spo2_count += timestamps < 0
+        bpm_count += timestamps > 0
 
-    yield comparison[
-        (sp02.timestamp > bpm.timestamp) - (sp02.timestamp < bpm.timestamp)
-    ]()
+        yield next(comparison[timestamps]())
+        if spo2_count or bpm_count:
+            logger.debug(
+                f"{spo2_count} spo2 entries, {bpm_count} heart rate entries "
+                "skipped to find matching timestamp"
+            )
+        spo2_count = 0
+        bpm_count = 0
 
 
 def parse_sleep_health_data(
@@ -102,7 +115,6 @@ def parse_sleep_health_data(
     Returns:
         Generator[list[SleepHealthData], None, None]: A generator of sessions
     """
-
     session: list[SleepHealthData] = []
     prev_timestamp = None
 
