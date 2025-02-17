@@ -7,6 +7,7 @@ from fitbit2oscar.time_helpers import (
     calculate_duration,
     convert_timestamp,
     format_timestamp,
+    is_valid_date,
 )
 from fitbit2oscar._types import (
     SleepEntry,
@@ -75,13 +76,13 @@ def is_valid_sleep_entry(
     start_date: datetime.date,
     end_date: datetime.date,
 ) -> bool:
-    is_valid_start: bool = (
-        start_date
-        <= datetime.date.fromisoformat(csv_rows[-1]["Date"])
-        <= end_date
+    valid_start: bool = is_valid_date(
+        timestamp=csv_rows[0]["Date"],
+        start_date=start_date,
+        end_date=end_date,
     )
 
-    return is_valid_start and any(
+    return valid_start and any(
         "light in" in row["Sleep stage"] for row in csv_rows
     )
 
@@ -211,7 +212,7 @@ def collect_sp02_data(
         for timestamp, sp02 in extract_sp02_data(
             read_file.read_csv_file(sp02_file)
         )
-        if start_date < timestamp.date() < end_date
+        if is_valid_date(timestamp.date(), start_date, end_date)
     )
 
 
@@ -225,7 +226,7 @@ def collect_bpm_data(
         for timestamp, bpm in extract_bpm_data(
             read_file.read_csv_file(bpm_file)
         )
-        if start_date < timestamp.date() < end_date
+        if is_valid_date(timestamp.date(), start_date, end_date)
     )
 
 

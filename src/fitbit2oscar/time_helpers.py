@@ -76,6 +76,15 @@ def format_timestamp(timestamp: str, timestamp_format: str) -> str:
     return dt.strftime(timestamp_format)
 
 
+def is_valid_date(
+    date: datetime.date,
+    start_date: datetime.date,
+    end_date: datetime.date,
+) -> bool:
+    """Validate if a date falls within the specified range."""
+    return start_date <= date <= end_date
+
+
 def get_local_timezone() -> datetime.timezone:
     """Determine local timezone."""
     local = time.localtime()

@@ -3,7 +3,7 @@ from collections.abc import Generator
 from pathlib import Path
 
 from fitbit2oscar import read_file
-from fitbit2oscar.time_helpers import convert_timestamp
+from fitbit2oscar.time_helpers import convert_timestamp, is_valid_date
 from fitbit2oscar._types import SleepEntry, VitalsData
 
 
@@ -92,15 +92,15 @@ def is_valid_sleep_entry(
             key in sleep_entry for key in ("data", "dateOfSleep", "levels")
         )
 
-    is_valid_start: bool = (
-        start_date
-        <= datetime.date.fromisoformat(sleep_entry["dateOfSleep"])
-        <= end_date
+    valid_date: bool = is_valid_date(
+        timestamp=sleep_entry["dateOfSleep"],
+        start_date=start_date,
+        end_date=end_date,
     )
 
     return (
         is_valid_format()
-        and is_valid_start
+        and valid_date
         and "light" in sleep_entry["levels"]["summary"].keys()
     )
 
@@ -160,7 +160,7 @@ def collect_sp02_data(
             read_file.read_csv_file(sp02_file),
             timezone,
         )
-        if start_date < timestamp.date() < end_date
+        if is_valid_date(timestamp.date(), start_date, end_date)
     )
 
 
@@ -178,7 +178,7 @@ def collect_bpm_data(
             read_file.read_json_file(bpm_file),
             timezone,
         )
-        if start_date < timestamp.date() < end_date
+        if is_valid_date(timestamp.date(), start_date, end_date)
     )
 
 
