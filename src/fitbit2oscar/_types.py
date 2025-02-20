@@ -3,6 +3,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Generic, TypeAlias, TypeVar, NamedTuple
 
+DictNotation: TypeAlias = list[str] | str
+
 CSVData: TypeAlias = dict[str, str]
 SleepSummary: TypeAlias = dict[str, dict[str, int]]
 SleepData: TypeAlias = list[dict[str, str | int]]
@@ -28,8 +30,8 @@ class SleepKeys(Generic[Sleep]):
     stop_time: str | None = None
     sleep_efficiency: str | None = None
 
-    sleep_stages: list[str] | str
-    levels_summary: list[str] | str | None = None
+    sleep_stages: DictNotation
+    levels_summary: DictNotation | None = None
 
 
 @dataclass
@@ -38,7 +40,7 @@ class SourceFormat(Generic[Sleep]):
     transforms: (
         dict[str, Callable[[Sleep], str | int | SleepLevels]] | None
     ) = None
-    required_fields: list[list[str] | str]
+    required_fields: list[DictNotation]
 
     def __post_init__(self) -> None:
         if self.transforms is None:
