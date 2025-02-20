@@ -6,6 +6,7 @@ from typing import Generic, TypeAlias, TypeVar, NamedTuple
 DictNotation: TypeAlias = list[str] | str
 
 CSVData: TypeAlias = dict[str, str]
+CSVRows: TypeAlias = list[CSVData]
 SleepSummary: TypeAlias = dict[str, dict[str, int]]
 SleepData: TypeAlias = list[dict[str, str | int]]
 SleepLevels: TypeAlias = dict[str, SleepSummary | SleepData]
