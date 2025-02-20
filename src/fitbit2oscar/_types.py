@@ -14,7 +14,7 @@ SleepEntry: TypeAlias = dict[str, str | int | SleepLevels]
 
 SleepHealthData: TypeAlias = tuple[datetime, int, int]
 
-Sleep = TypeVar("Sleep", CSVData, SleepEntry)
+Sleep = TypeVar("Sleep", CSVRows, SleepEntry)
 
 
 class VitalsData(NamedTuple):
