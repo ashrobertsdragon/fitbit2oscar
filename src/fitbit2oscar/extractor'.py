@@ -109,7 +109,6 @@ def extract_sleep_data(
     sleep_data: Generator[SleepEntry | list[CSVData], None, None],
     start_date: datetime.date,
     end_date: datetime.date,
-    required_fields: list[str],
     source_format: SourceFormat,
 ) -> Generator[SleepEntry, None, None]:
     for entry in sleep_data:
@@ -119,7 +118,7 @@ def extract_sleep_data(
             end_date,
             source_format.sleep_keys.timestamp,
             source_format.sleep_keys.sleep_stages,
-            required_fields,
+            source_format.required_fields,
         ):
             continue
         yield {
