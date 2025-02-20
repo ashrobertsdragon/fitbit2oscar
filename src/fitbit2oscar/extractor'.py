@@ -3,13 +3,19 @@ import logging
 from collections.abc import Callable, Generator
 from pathlib import Path
 
-from fitbit2oscar._types import CSVData, SleepEntry, VitalsData, SourceFormat
+from fitbit2oscar._types import (
+    CSVRows,
+    DictNotation,
+    SleepEntry,
+    VitalsData,
+    SourceFormat,
+)
 from fitbit2oscar.time_helpers import convert_timestamp, is_valid_date
 
 logger = logging.getLogger("fitbit2oscar")
 
 
-def get_nested_value(data: dict, key_path: str | list[str]) -> str | int:
+def get_nested_value(data: dict, key_path: DictNotation) -> str | int:
     """
     Retrieves a value from a nested dictionary using dot or bracket notation.
     """
@@ -32,7 +38,7 @@ def extract_vitals_data(
     vitals_data: Generator[dict[str, str | dict[str, int]]],
     vitals_type: str,
     timestamp_key: str,
-    value_key: str,
+    value_key: DictNotation,
     min_valid: int,
     timezone: str | None = None,
     use_seconds: bool = True,
@@ -48,7 +54,7 @@ def extract_vitals_data(
             of CSV or JSON entries of vitals data from Fitbit.
         vitals_type (str): Type of vitals data.
         timestamp_key (str): Key of timestamp in CSV or JSON entry.
-        value_key (str | list[str]): Key of vitals value in CSV or JSON entry.
+        value_key (list[str] | str): Key of vitals value in CSV or JSON entry.
             Support for nested keys is provided using dot or bracket notation.
         min_valid (int): Minimum value for valid vitals data.
         timezone (str, optional): Timezone to convert timestamps to. Defaults
@@ -82,12 +88,12 @@ def extract_vitals_data(
 
 
 def is_valid_sleep_entry(
-    entry: SleepEntry | list[CSVData],
+    entry: SleepEntry | CSVRows,
     start_date: datetime.date,
     end_date: datetime.date,
     date_field: str,
     light_check_path: str,
-    required_fields: list[str] = None,
+    required_fields: DictNotation,
 ) -> bool:
     if required_fields and not all(
         (field or get_nested_value(entry, field)) in entry
@@ -107,7 +113,7 @@ def is_valid_sleep_entry(
 
 
 def extract_sleep_data(
-    sleep_data: Generator[SleepEntry | list[CSVData], None, None],
+    sleep_data: Generator[SleepEntry | CSVRows, None, None],
     start_date: datetime.date,
     end_date: datetime.date,
     source_format: SourceFormat,
