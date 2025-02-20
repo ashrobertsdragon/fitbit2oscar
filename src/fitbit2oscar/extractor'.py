@@ -3,7 +3,7 @@ import logging
 from collections.abc import Callable, Generator
 from pathlib import Path
 
-from fitbit2oscar._types import CSVData, SleepEntry, VitalsData, SleepKeys
+from fitbit2oscar._types import CSVData, SleepEntry, VitalsData, SourceFormat
 from fitbit2oscar.time_helpers import convert_timestamp, is_valid_date
 
 logger = logging.getLogger("fitbit2oscar")
@@ -109,17 +109,20 @@ def extract_sleep_data(
     sleep_data: Generator[SleepEntry | list[CSVData], None, None],
     start_date: datetime.date,
     end_date: datetime.date,
-    light_check_path: str,
     required_fields: list[str],
-    keys: SleepKeys,
+    source_format: SourceFormat,
 ) -> Generator[SleepEntry, None, None]:
     for entry in sleep_data:
         if not is_valid_sleep_entry(
             entry,
             start_date,
             end_date,
-            keys.date,
-            light_check_path,
+            source_format.sleep_keys.timestamp,
+            source_format.sleep_keys.sleep_stages,
             required_fields,
         ):
             continue
+        yield {
+            sleep_key: transform_func
+            for sleep_key, transform_func in source_format.transforms
+        }
