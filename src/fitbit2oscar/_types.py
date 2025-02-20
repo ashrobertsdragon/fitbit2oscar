@@ -38,6 +38,7 @@ class SourceFormat(Generic[Sleep]):
     transforms: (
         dict[str, Callable[[Sleep], str | int | SleepLevels]] | None
     ) = None
+    required_fields: list[list[str] | str]
 
     def __post_init__(self) -> None:
         if self.transforms is None:
