@@ -90,7 +90,8 @@ def is_valid_sleep_entry(
     required_fields: list[str] = None,
 ) -> bool:
     if required_fields and not all(
-        field in entry for field in required_fields
+        (field or get_nested_value(entry, field)) in entry
+        for field in required_fields
     ):
         return False
 
