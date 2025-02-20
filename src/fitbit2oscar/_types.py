@@ -22,14 +22,14 @@ class VitalsData(NamedTuple):
 @dataclass
 class SleepKeys(Generic[Sleep]):
     timestamp: str
-    duration: str
     start_time: str
-    stop_time: str
     awake_time: str
-    sleep_efficiency: str
+    duration: str | None = None
+    stop_time: str | None = None
+    sleep_efficiency: str | None = None
 
+    sleep_stages: list[str] | str
     levels_summary: list[str] | str | None = None
-    levels_data: list[str] | str | None = None
 
 
 @dataclass
