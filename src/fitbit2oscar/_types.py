@@ -41,4 +41,6 @@ class SourceFormat(Generic[Sleep]):
 
     def __post_init__(self) -> None:
         if self.transforms is None:
-            self.transforms = {}
+            self.transforms = {
+                key: value for key, value in self.sleep_keys.items()
+            }
