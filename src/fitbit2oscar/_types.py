@@ -1,7 +1,8 @@
 from collections.abc import Callable
-from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TypeAlias, TypeVar, NamedTuple
+
+from pydantic import BaseModel, Field
 
 DictNotation: TypeAlias = list[str] | str
 
@@ -22,8 +23,7 @@ class VitalsData(NamedTuple):
     data: int
 
 
-@dataclass
-class Keys:
+class Keys(BaseModel):
     timestamp: str
     start_time: str
     time_awake_after_sleep_onset: str
@@ -35,8 +35,7 @@ class Keys:
     summary: DictNotation | None = None
 
 
-@dataclass
-class SleepConfig:
+class SleepConfig(BaseModel):
     keys: Keys
     sleep_transformations: (
         dict[str, Callable[[Sleep], str | int | SleepLevels]] | None
@@ -49,18 +48,16 @@ class SleepConfig:
             }
 
 
-@dataclass
-class VitalsConfig:
+class VitalsConfig(BaseModel):
     timestamp: str
     spo2: str
     bpm: str
 
 
-@dataclass
-class Config:
-    required_fields: list[DictNotation] = field(default_factory=list)
+class Config(BaseModel):
+    required_fields: list[DictNotation] = Field(default_factory=list)
     timezone: str | None = None
-    use_seconds: bool = field(default=True)
+    use_seconds: bool = Field(default=True)
 
-    sleep: SleepConfig = field(default_factory=SleepConfig)
-    vitals: VitalsConfig = field(default_factory=VitalsConfig)
+    sleep: SleepConfig = Field(default_factory=SleepConfig)
+    vitals: VitalsConfig = Field(default_factory=VitalsConfig)
