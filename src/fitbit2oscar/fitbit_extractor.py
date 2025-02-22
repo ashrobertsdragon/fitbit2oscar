@@ -1,5 +1,5 @@
+import datetime
 import logging
-from datetime import datetime, date
 from pathlib import Path
 from collections.abc import Generator
 
@@ -22,11 +22,9 @@ class FitbitExtractor:
     SPO2_MIN_VALID = 75
     BPM_MIN_VALID = 50
 
-    def __init__(
-        self,
-        config: Config,
-    ):
+    def __init__(self, config: Config, timezone: datetime.timezone):
         self.config = config
+        self.timezone = timezone
 
     def get_nested_value(
         self, data: dict, key_path: DictNotation
@@ -48,10 +46,10 @@ class FitbitExtractor:
     def is_valid_sleep_entry(
         self,
         entry: Sleep,
-        start_date: date,
-        end_date: date,
+        start_date: datetime.date,
+        end_date: datetime.date,
     ) -> bool:
-        """Validates sleep entry based on format and date range"""
+        """Validates sleep entry based on format and datetime.date range"""
         if not all(
             self.get_nested_value(entry, field) in entry
             for field in self.config.required_fields
@@ -103,8 +101,8 @@ class FitbitExtractor:
     def extract_sleep_data(
         self,
         sleep_data: Generator[Sleep, None, None],
-        start_date: date,
-        end_date: date,
+        start_date: datetime.date,
+        end_date: datetime.date,
     ) -> Generator[SleepEntry, None, None]:
         """Extracts and validates sleep data"""
         for entry in sleep_data:
@@ -118,8 +116,8 @@ class FitbitExtractor:
     def collect_vitals_data(
         self,
         vitals_files: list[Path],
-        start_date: datetime.date,
-        end_date: datetime.date,
+        start_date: datetime.datetime.datetime.date,
+        end_date: datetime.datetime.datetime.date,
         vitals_key: DictNotation,
         vitals_type: str,
         min_valid: int,
@@ -130,14 +128,14 @@ class FitbitExtractor:
             for timestamp, data in self.extract_vitals_data(
                 read_file(file), vitals_key, vitals_type, min_valid
             )
-            if is_valid_date(timestamp.date(), start_date, end_date)
+            if is_valid_date(timestamp.datetime.date(), start_date, end_date)
         )
 
     def collect_sleep_data(
         self,
         sleep_files: list[Path],
-        start_date: datetime.date,
-        end_date: datetime.date,
+        start_date: datetime.datetime.datetime.date,
+        end_date: datetime.datetime.datetime.date,
     ) -> Generator[SleepEntry, None, None]:
         for file in sleep_files:
             sleep_data = list(
@@ -152,8 +150,8 @@ class FitbitExtractor:
         spo2_files: list[Path],
         bpm_files: list[Path],
         sleep_files: list[Path],
-        start_date: date,
-        end_date: date,
+        start_date: datetime.date,
+        end_date: datetime.date,
     ) -> tuple[
         Generator[VitalsData, None, None],
         Generator[VitalsData, None, None],
