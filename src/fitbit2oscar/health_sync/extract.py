@@ -16,13 +16,14 @@ from fitbit2oscar._types import (
     SleepSummary,
     SleepData,
     VitalsData,
+    CSVData,
 )
 
 logger = logging.getLogger("fitbit2oscar")
 
 
 def extract_sp02_data(
-    csv_rows: Generator[dict[str, str]],
+    csv_rows: Generator[CSVData],
 ) -> Generator[VitalsData, None, None]:
     """
     Extracts timestamp and sp02 values from CSV rows.
@@ -61,7 +62,7 @@ def extract_sp02_data(
 
 
 def extract_bpm_data(
-    csv_rows: Generator[dict[str, str]],
+    csv_rows: Generator[CSVData],
 ) -> Generator[VitalsData, None, None]:
     """
     Extracts timestamp and BPM values from CSV rows.
@@ -96,7 +97,7 @@ def extract_bpm_data(
 
 
 def is_valid_sleep_entry(
-    csv_rows: list[dict[str, str]],
+    csv_rows: Generator[CSVData],
     start_date: datetime.date,
     end_date: datetime.date,
 ) -> bool:
@@ -107,12 +108,12 @@ def is_valid_sleep_entry(
     )
 
     return valid_start and any(
-        "light in" in row["Sleep stage"] for row in csv_rows
+        "light" in row["Sleep stage"] for row in csv_rows
     )
 
 
 def calculate_stop_time(
-    csv_rows: list[dict[str, str]], timestamp_format: str
+    csv_rows: Generator[CSVData], timestamp_format: str
 ) -> datetime.datetime:
     """Calculate the stop time of the sleep session."""
     stop_row = csv_rows[-1]
@@ -122,7 +123,7 @@ def calculate_stop_time(
 
 
 def process_sleep_data(
-    csv_rows: list[dict[str, str]],
+    csv_rows: Generator[CSVData],
     duration: int,
 ) -> tuple[SleepLevels, int]:
     """
