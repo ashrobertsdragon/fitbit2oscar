@@ -9,7 +9,7 @@ class TakeoutHandler(DataHandler):
         """Build the glob pattern from data type and file type"""
         return f"{data_type}*.{filetype}"
 
-    def _get_paths(self) -> None:
+    def get_paths(self) -> None:
         """
         Get lists of Paths to data files in specified format for SpO2, heart
         rate, and sleep data.
@@ -58,7 +58,7 @@ takeout_vitals_config = VitalsConfig(
     bpm_filetype="json",
 )
 
-TakeoutConfig = Config(
+takeout_config = Config(
     required_fields=["data", "dateofSleep", "levels"],
     profile_path="Your Profile" / "Profile.csv",
     sleep=takeout_sleep_config,
