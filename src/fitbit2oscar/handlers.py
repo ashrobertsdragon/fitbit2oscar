@@ -35,12 +35,6 @@ class DataHandler:
             f"{package}.extract"
         )
 
-        self.paths: dict[str, list[Path]] = {
-            "sleep_paths": [],
-            "sp02_paths": [],
-            "bpm_paths": [],
-        }
-
     def _profile_info(self) -> Path:
         if self.config.profile_path is None:
             raise FitbitConverterDataError(
@@ -55,12 +49,8 @@ class DataHandler:
     def _walk_paths(paths: list[str] | str):
         return paths if isinstance(paths, str) else "/".join(paths)
 
-    def _build_glob_pattern(self, **kwargs) -> str:
-        """Build glob pattern based on provided arguments"""
-        raise NotImplementedError
-
     def _dirs(self) -> tuple[Path, Path, Path]:
-        """Get paths and timezone."""
+        """The data directories."""
         spo2_dir = self.args.fitbit_path / self._parse_dict_notation(
             self.config.vitals.spo2_dir
         )
@@ -72,13 +62,41 @@ class DataHandler:
         )
         return spo2_dir, bpm_dir, sleep_dir
 
-    def get_paths(self) -> None:
-        """Get list of paths for files for SpO2, heart rate, and sleep data"""
-        raise NotImplementedError
+    def _get_paths(self) -> None:
+        """
+        Get lists of Paths to data files in specified format for SpO2, heart
+        rate, and sleep data.
+        """
+        keys = ["spo2", "bpm", "sleep"]
+        data_types = [
+            self.config.vitals.spo2_glob,
+            self.config.vitals.bpm_glob,
+            self.config.sleep.glob,
+        ]
+        filetypes = [
+            self.config.vitals.spo2_filetype,
+            self.config.vitals.bpm_filetype,
+            self.config.sleep.filetype,
+        ]
 
-    def get_timezone(self) -> str:
-        """Get the user timezone"""
-        raise NotImplementedError
+        for key, directory, data_type, filetype in zip(
+            keys, self._dirs(), data_types, filetypes
+        ):
+            pattern = self._build_glob_pattern(data_type, filetype)
+            self.paths[f"{key}_paths"] = directory.glob(pattern)
+
+    @property
+    def timezone(self) -> str | None:
+        """The user timezone if one exists or None"""
+        if not self._timezone:
+            self._timezone = self._get_timezone()
+        return self._timezone
+
+    @property
+    def paths(self) -> dict[str, list[str]]:
+        if not self._paths:
+            self._paths = self._get_paths()
+        return self._paths
 
     def parse_data(
         self,
@@ -88,7 +106,15 @@ class DataHandler:
         Generator[SleepEntry, None, None],
     ]:
         return self.extractor_module.extract_data(
-            self.paths,
-            self.args.start_date,
-            self.args.end_date,
+            self.paths, self.args.start_date, self.args.end_date, self.timezone
         )
+
+    def _build_glob_pattern(
+        self, data_type: str, filetype: str, **kwargs
+    ) -> str:
+        """Build glob pattern based on provided arguments"""
+        raise NotImplementedError
+
+    def _get_timezone(self) -> str | None:
+        """Get the user timezone"""
+        raise NotImplementedError

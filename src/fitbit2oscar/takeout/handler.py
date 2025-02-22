@@ -10,29 +10,6 @@ class TakeoutHandler(DataHandler):
         """Build the glob pattern from data type and file type"""
         return f"{data_type}*.{filetype}"
 
-    def get_paths(self) -> None:
-        """
-        Get lists of Paths to data files in specified format for SpO2, heart
-        rate, and sleep data.
-        """
-        keys = ["spo2", "bpm", "sleep"]
-        data_types = [
-            self.config.vitals.spo2_glob,
-            self.config.vitals.bpm_glob,
-            self.config.sleep.glob,
-        ]
-        filetypes = [
-            self.config.vitals.spo2_filetype,
-            self.config.vitals.bpm_filetype,
-            self.config.sleep.filetype,
-        ]
-
-        for key, directory, data_type, filetype in zip(
-            keys, self._dirs(), data_types, filetypes
-        ):
-            pattern = self._build_glob_pattern(data_type, filetype)
-            self.paths[f"{key}_paths"] = directory.glob(pattern)
-
     def get_timezone(self) -> str | None:
         """Get the user timezone from Fitbit profile CSV"""
         profile_data = next(read_csv_file(self._profile_info()))
