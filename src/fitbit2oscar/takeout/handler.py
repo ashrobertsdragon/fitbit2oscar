@@ -1,5 +1,6 @@
 from fitbit2oscar.handlers import DataHandler
 from fitbit2oscar.config import Config, SleepConfig, VitalsConfig, SleepKeys
+from fitbit2oscar.read_file import read_csv_file
 
 
 class TakeoutHandler(DataHandler):
@@ -31,6 +32,11 @@ class TakeoutHandler(DataHandler):
         ):
             pattern = self._build_glob_pattern(data_type, filetype)
             self.paths[f"{key}_paths"] = directory.glob(pattern)
+
+    def get_timezone(self) -> str | None:
+        """Get the user timezone from Fitbit profile CSV"""
+        profile_data = next(read_csv_file(self._profile_info()))
+        return profile_data.get("timezone", None)
 
 
 takeout_sleep_keys = SleepKeys(

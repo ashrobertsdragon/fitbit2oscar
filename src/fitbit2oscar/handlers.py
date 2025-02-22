@@ -41,8 +41,7 @@ class DataHandler:
             "bpm_paths": [],
         }
 
-    @property
-    def profile_path(self) -> Path:
+    def _profile_info(self) -> Path:
         if self.config.profile_path is None:
             raise FitbitConverterDataError(
                 f"There is no profile path utilized in "
@@ -75,6 +74,10 @@ class DataHandler:
 
     def get_paths(self) -> None:
         """Get list of paths for files for SpO2, heart rate, and sleep data"""
+        raise NotImplementedError
+
+    def get_timezone(self) -> str:
+        """Get the user timezone"""
         raise NotImplementedError
 
     def parse_data(
