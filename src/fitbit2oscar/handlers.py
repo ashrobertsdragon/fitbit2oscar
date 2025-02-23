@@ -51,15 +51,18 @@ class DataHandler:
 
     def _dirs(self) -> tuple[Path, Path, Path]:
         """The data directories."""
-        spo2_dir = self.args.fitbit_path / self._parse_dict_notation(
-            self.config.vitals.spo2_dir
-        )
-        bpm_dir = self.args.fitbit_path / self._parse_dict_notation(
-            self.config.vitals.bpm_dir
-        )
-        sleep_dir = self.args.fitbit_path / self._parse_dict_notation(
-            self.config.sleep.dir
-        )
+
+        def _build_path(config_path: str | None) -> Path:
+            if config_path:
+                return self.args.fitbit_path / self._parse_dict_notation(
+                    config_path
+                )
+            return self.args.fitbit_path
+
+        spo2_dir = _build_path(self.config.vitals.spo2_dir)
+        bpm_dir = _build_path(self.config.vitals.bpm_dir)
+        sleep_dir = _build_path(self.config.sleep.dir)
+
         return spo2_dir, bpm_dir, sleep_dir
 
     def _get_paths(self) -> None:
