@@ -9,7 +9,7 @@ from fitbit2oscar.config import (
     SleepKeys,
     VitalsConfig,
 )
-from fitbit2oscar.health_sync import extract
+from fitbit2oscar.plugins.health_sync import extract
 
 
 class HealthSyncHandler(DataHandler):
