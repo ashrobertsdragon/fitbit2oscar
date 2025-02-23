@@ -30,9 +30,7 @@ class FitbitExtractor:
         self, data: dict, key_path: DictNotation
     ) -> str | int:
         """Retrieves value from nested dictionary using dot or bracket notation"""
-        if "[" in key_path and "]" in key_path:
-            key_path = key_path[1:-1].split("][")
-        elif "." in key_path:
+        if "." in key_path:
             key_path = key_path.split(".")
 
         for key in key_path:
@@ -109,7 +107,7 @@ class FitbitExtractor:
             if not self.is_valid_sleep_entry(entry, start_date, end_date):
                 continue
             yield {
-                sleep_key: transform_func
+                sleep_key: transform_func(entry)
                 for sleep_key, transform_func in self.config.sleep.sleep_transformations
             }
 
@@ -162,7 +160,7 @@ class FitbitExtractor:
             spo2_files,
             start_date,
             end_date,
-            vitals_key=self.config.vitals.spo2,
+            vitals_key=self.config.vitals.spo2_key,
             vitals_type="SpO2",
             min_valid=self.SPO2_MIN_VALID,
         )
@@ -170,7 +168,7 @@ class FitbitExtractor:
             bpm_files,
             start_date,
             end_date,
-            vitals_key=self.config.vitals.heart_rate,
+            vitals_key=self.config.vitals.bpm_key,
             vitals_type="Heart rate",
             min_valid=self.BPM_MIN_VALID,
         )
