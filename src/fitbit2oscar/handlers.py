@@ -1,11 +1,31 @@
 import argparse
 import importlib
+import inspect
+import pkgutil
 from pathlib import Path
 from collections.abc import Generator
 
 from fitbit2oscar.config import Config
 from fitbit2oscar.exceptions import FitbitConverterDataError
 from fitbit2oscar._types import VitalsData, SleepEntry
+from fitbit2oscar._logger import logger
+
+
+for _, name, is_package in pkgutil.walk_packages(
+    path=["fitbit2oscar.plugins"],
+):
+    if is_package:
+        try:
+            module = importlib.import_module(
+                f"fitbit2oscar.plugins.{name}.handler"
+            )
+            for name, obj in inspect.getmembers(module, inspect.isclass):
+                if issubclass(obj, "DataHandler"):
+                    globals()[name] = obj
+
+            logger.debug(f"Plugin {name} added")
+        except ModuleNotFoundError:
+            pass
 
 
 class DataHandler:
