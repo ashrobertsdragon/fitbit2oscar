@@ -2,6 +2,7 @@ import argparse
 import datetime
 import importlib
 import logging
+import pkgutil
 import re
 from pathlib import Path
 
@@ -10,6 +11,16 @@ from fitbit2oscar._enums import DateFormat, InputType
 
 
 logger = logging.getLogger(__name__)
+
+
+def discover_plugins() -> list[str]:
+    plugins = []
+    for _, name, is_package in pkgutil.walk_packages(
+        path=["fitbit2oscar.plugins"]
+    ):
+        if is_package:
+            plugins.append(name)
+    return plugins
 
 
 def configure_logger(args: argparse.Namespace) -> None:
@@ -115,6 +126,7 @@ class DateFormatValidator(argparse.Action):
 
 def create_parser() -> argparse.Namespace:
     """Create an argument parser for the command line interface."""
+    input_choices = discover_plugins()
     parser = argparse.ArgumentParser(
         prog="Fitbit to OSCAR Data Converter",
         description="Converts Fitbit data to OSCAR format",
@@ -122,9 +134,12 @@ def create_parser() -> argparse.Namespace:
 
     input_source = parser.add_argument(  # noqa: F841
         "input_source",
-        help="Source of Fitbit data (-T for Takeout, -H for Health Sync)/ Defaults to -T because Health Sync support is experimental",
-        choices=["-T", "-H"],
-        default="-T",
+        help=(
+            f"Source of Fitbit data ({', '.join(input_choices)}) / "
+            "Defaults to 'takeout' since Health Sync support is experimental"
+        ),
+        choices=input_choices,
+        default="takeout",
     )
 
     fitbit_path = parser.add_argument(  # noqa: F841
