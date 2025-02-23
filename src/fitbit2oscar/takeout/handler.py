@@ -23,8 +23,9 @@ takeout_sleep_keys = SleepKeys(
     stop_time="endTime",
     wake_after_sleep_onset_duration="minutesAwake",
     sleep_efficiency="efficiency",
+    levels="levels",
     sleep_stages="levels.data",
-    summary=["levels.summary"],
+    summary="levels.summary",
 )
 
 takeout_sleep_config = SleepConfig(
@@ -33,8 +34,8 @@ takeout_sleep_config = SleepConfig(
 
 takeout_vitals_config = VitalsConfig(
     timestamp="dateTime",
-    spo2="value.spo2",
-    bpm="value.bpm",
+    spo2_key="value.spo2",
+    bpm_key="value.bpm",
     spo2_glob="spo2-",
     bpm_glob="heart-rate-",
     spo2_filetype="csv",
