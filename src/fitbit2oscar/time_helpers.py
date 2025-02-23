@@ -1,14 +1,11 @@
 import datetime
-import logging
 import time
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from fitbit2oscar.exceptions import FitbitConverterValueError
 from fitbit2oscar.read_file import read_csv_file, read_json_file
-from fitbit2oscar.takeout.paths import profile_path
-
-logger = logging.getLogger("fitbit2oscar")
+from fitbit2oscar._logger import logger
 
 
 def calculate_duration(
@@ -110,9 +107,9 @@ def get_timezone_data(timezone_file: str) -> dict[str, str | dict[str, str]]:
     return next(read_json_file(tz_path))
 
 
-def get_timezone_from_profile(fitbit_path: Path) -> datetime.timezone:
+def get_timezone_from_profile(profile_path: Path) -> datetime.timezone:
     """Get timezone from profile file."""
-    for row in read_csv_file(profile_path(fitbit_path)):
+    for row in read_csv_file(profile_path):
         timezone: str = row["timezone"]
     if not timezone:
         logger.error("Could not find timezone in profile file")

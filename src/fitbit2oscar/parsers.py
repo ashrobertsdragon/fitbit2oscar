@@ -1,5 +1,4 @@
 import datetime
-import logging
 from collections.abc import Callable, Generator
 
 from fitbit2oscar.time_helpers import convert_time_data
@@ -9,8 +8,7 @@ from fitbit2oscar._types import (
     SleepHealthData,
     VitalsData,
 )
-
-logger = logging.getLogger("fitbit2oscar")
+from fitbit2oscar._logger import logger
 
 
 def next_spo2(

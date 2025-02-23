@@ -1,5 +1,4 @@
 import argparse
-import logging
 from collections.abc import Generator
 from datetime import datetime
 
@@ -7,9 +6,7 @@ from fitbit2oscar import write_file
 from fitbit2oscar._types import SleepHealthData, SleepEntry, VitalsData
 from fitbit2oscar.factory import DataHandlerFactory
 from fitbit2oscar.parsers import parse_sleep_data, parse_sleep_health_data
-
-
-logger = logging.getLogger("fitbit2oscar")
+from fitbit2oscar._logger import logger
 
 
 def get_data(

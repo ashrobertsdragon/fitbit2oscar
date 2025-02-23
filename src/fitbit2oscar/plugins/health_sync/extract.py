@@ -1,5 +1,4 @@
 import datetime
-import logging
 from collections.abc import Generator
 from fitbit2oscar.time_helpers import (
     convert_timestamp,
@@ -10,8 +9,6 @@ from fitbit2oscar._types import (
     SleepData,
     CSVData,
 )
-
-logger = logging.getLogger("fitbit2oscar")
 
 
 def calculate_stop_time(

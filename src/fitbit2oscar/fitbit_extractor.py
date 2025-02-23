@@ -1,5 +1,4 @@
 import datetime
-import logging
 from pathlib import Path
 from collections.abc import Generator
 
@@ -12,8 +11,7 @@ from fitbit2oscar._types import (
 )
 from fitbit2oscar.read_file import read_file
 from fitbit2oscar.time_helpers import convert_timestamp, is_valid_date
-
-logger = logging.getLogger("fitbit2oscar")
+from fitbit2oscar._logger import logger
 
 
 class FitbitExtractor:

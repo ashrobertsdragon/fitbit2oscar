@@ -1,10 +1,8 @@
 import argparse
-import logging
 
 from fitbit2oscar.exceptions import FItbitConverterValueError
 from fitbit2oscar.handlers import DataHandler
-
-logger = logging.getLogger("fitbit2oscar")
+from fitbit2oscar._logger import logger
 
 
 class DataHandlerFactory:
@@ -15,7 +13,7 @@ class DataHandlerFactory:
         try:
             return DataHandler._registry[input_type](args)
         except KeyError:
-            logging.error(f"Invalid input type '{input_type}'")
+            logger.error(f"Invalid input type '{input_type}'")
             raise FItbitConverterValueError(
                 f"Invalid input type '{input_type}'"
             )
