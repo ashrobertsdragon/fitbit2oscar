@@ -97,7 +97,7 @@ sleep_config = SleepConfig(
         "stop_time": lambda entry: extract.calculate_stop_time(
             entry, datetime_format
         ),
-        "duration": lambda entry: extract.calculate_duration(
+        "duration": lambda entry: time_helpers.calculate_duration(
             time_helpers.convert_timestamp(
                 resolver.resolve("start_time"),
                 timestamp_format=datetime_format,
