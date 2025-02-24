@@ -103,17 +103,12 @@ def get_local_timezone() -> datetime.timezone:
 
 
 def get_timezone_data(timezone_file: str) -> dict[str, str | dict[str, str]]:
-    tz_path = Path(__file__).parent / timezone_file
+    tz_path = Path(__file__).parent / "tz_data" / timezone_file
     return next(read_json_file(tz_path))
 
 
-def get_timezone_from_profile(profile_path: Path) -> datetime.timezone:
-    """Get timezone from profile file."""
-    for row in read_csv_file(profile_path):
-        timezone: str = row["timezone"]
-    if not timezone:
-        logger.error("Could not find timezone in profile file")
-        raise FitbitConverterValueError("Could not find timezone")
+def get_timezone(timezone: str) -> datetime.timezone:
+    """Get timezone from IANA or Microsoft Time Zone Index."""
     region = timezone.split("/")[0]
     if region in ["US", "United States", "U.S."]:
         timezone.replace(region, "America")
@@ -128,7 +123,9 @@ def get_timezone_from_profile(profile_path: Path) -> datetime.timezone:
         logger.debug(f"Using Microsoft Time Zone Index for {timezone}")
         zone: str = ms_zones[timezone]["BaseUtcOffset"]
     else:
-        logger.warning(f"Could not find timezone {timezone}")
+        logger.warning(
+            f"Could not find timezone {timezone}. Using system timezone."
+        )
         return get_local_timezone()
 
     offset_hr, offset_min = zone.split(":", maxsplit=1)
@@ -136,3 +133,13 @@ def get_timezone_from_profile(profile_path: Path) -> datetime.timezone:
         hours=int(offset_hr), minutes=int(offset_min.split(":")[0])
     )
     return datetime.timezone(offset)
+
+
+def get_timezone_from_profile(profile_path: Path) -> datetime.timezone:
+    """Get timezone from profile file."""
+    data = next(read_csv_file(profile_path))
+    timezone: str = data["timezone"]
+    if not timezone:
+        logger.error("Could not find timezone in profile file")
+        raise FitbitConverterValueError("Could not find timezone")
+    return get_timezone(timezone)
