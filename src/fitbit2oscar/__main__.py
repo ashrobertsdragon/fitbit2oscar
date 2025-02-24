@@ -83,13 +83,9 @@ class InputPath(argparse.Action):
         if not input_arg:
             raise argparse.ArgumentError(
                 parser.input_source,
-                f"{option_string} requires an input type to be set (e.g., -T, -H).",
+                f"{option_string} requires an input type to be set (e.g., 'takeout', 'health_sync').",
             )
-        input_type = {
-            "-T": "takeout",
-            "-H": "health_sync",
-        }
-        fitbit_path = get_fitbit_path(Path(values), input_type[input_arg])
+        fitbit_path = get_fitbit_path(Path(values), input_arg)
         setattr(namespace, self.dest, fitbit_path)
 
 
@@ -110,7 +106,7 @@ class StoreLogFile(argparse.Action):
 class DateFormatValidator(argparse.Action):
     def __call__(self, parser, namespace, values, option_string) -> None:
         try:
-            if not getattr(namespace, "input_source", None) == "-H":
+            if not getattr(namespace, "input_source", None) == "health_sync":
                 raise argparse.ArgumentError(
                     parser.input_source,
                     f"{option_string} is not valid for input type {namespace.input_source}",
@@ -143,7 +139,11 @@ def create_parser() -> argparse.Namespace:
     )
 
     fitbit_path = parser.add_argument(  # noqa: F841
-        "-i", "--fitbit-path", help="Path to Fitbit data", action=InputPath
+        "-i",
+        "--fitbit-path",
+        help="Path to Fitbit data",
+        action=InputPath,
+        required=True,
     )
 
     export_path = parser.add_argument(  # noqa: F841
@@ -202,7 +202,7 @@ def create_parser() -> argparse.Namespace:
         type=Path,
     )
 
-    date_formate = parser.add_argument(  # noqa: F841
+    date_format = parser.add_argument(  # noqa: F841
         "-f",
         "--date-format",
         help="Date string format to use for Health Sync for input",
