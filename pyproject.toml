@@ -1,12 +1,27 @@
 [project]
 name = "fitbit2oscar"
 version = "0.1.0"
-description = "Fork of existing fitbit-convert script from the Apnea Board forums"
+description = "A command-line interface (CLI) tool designed to convert Fitbit sleep and health data into a format compatible with the OSCAR CPAP reporting software."
 readme = "README.md"
 authors = [
     { name = "Ashlynn Antrobus", email = "ashlynn@prosepal.io" }
 ]
-requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: End Users/Desktop",
+    "Intended Audience :: Developers",
+    "Environment :: Console",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Utilities",
+    "Typing :: Typed"
+]
+requires-python = ">=3.10"
 dependencies = [
     "pydantic>=2.10.6",
 ]
