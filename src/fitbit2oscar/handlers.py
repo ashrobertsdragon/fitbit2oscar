@@ -1,6 +1,6 @@
 import argparse
+import datetime
 import importlib
-import inspect
 import pkgutil
 from pathlib import Path
 from collections.abc import Generator
@@ -16,13 +16,7 @@ for _, name, is_package in pkgutil.walk_packages(
 ):
     if is_package:
         try:
-            module = importlib.import_module(
-                f"fitbit2oscar.plugins.{name}.handler"
-            )
-            for name, obj in inspect.getmembers(module, inspect.isclass):
-                if issubclass(obj, "DataHandler"):
-                    globals()[name] = obj
-
+            importlib.import_module(f"fitbit2oscar.plugins.{name}.handler")
             logger.debug(f"Plugin {name} added")
         except ModuleNotFoundError:
             pass
@@ -35,10 +29,11 @@ class DataHandler:
     @classmethod
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
-        package = cls.package
-        if package in cls._registry:
-            raise ValueError(f"Data handler '{package}' already exists")
-        cls._registry[cls.package] = cls
+        _package = cls.__module__.split(".")[-2]
+        if _package in cls._registry:
+            raise ValueError(f"Data handler '{_package}' already exists")
+        cls.package = _package
+        cls._registry[_package] = cls
 
     def __repr__(cls) -> str:
         return f"{cls.__name__} handler for {cls.package} input type"
@@ -46,13 +41,9 @@ class DataHandler:
     def __init__(self, args: argparse.Namespace, config: Config) -> None:
         self.args = args
         self.config = config
-        package = (
-            f"{DataHandler.package}.{self.package}"
-            if issubclass(self.__class__, DataHandler)
-            else self.package
-        )
+        package_path = ".".join(self.__module__.split(".")[0:-1])
         self.extractor_module: importlib.ModuleType = importlib.import_module(
-            f"{package}.extract"
+            f"{package_path}.extract"
         )
 
     def _profile_info(self) -> Path:
@@ -109,7 +100,7 @@ class DataHandler:
             self.paths[f"{key}_paths"] = directory.glob(pattern)
 
     @property
-    def timezone(self) -> str | None:
+    def timezone(self) -> datetime.timezone | None:
         """The user timezone if one exists or None"""
         if not self._timezone:
             self._timezone = self._get_timezone()
