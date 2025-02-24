@@ -1,19 +1,21 @@
+import datetime
+import fitbit2oscar.time_helpers
 from fitbit2oscar.handlers import DataHandler
 from fitbit2oscar.config import Config, SleepConfig, VitalsConfig, SleepKeys
-from fitbit2oscar.read_file import read_csv_file
 
 
 class TakeoutHandler(DataHandler):
-    package = "takeout"
+    """Handler for Google Takeout data files"""
 
     def _build_glob_pattern(self, data_type: str, filetype: str) -> str:
         """Build the glob pattern from data type and file type"""
         return f"{data_type}*.{filetype}"
 
-    def get_timezone(self) -> str | None:
+    def get_timezone(self) -> datetime.timezone | None:
         """Get the user timezone from Fitbit profile CSV"""
-        profile_data = next(read_csv_file(self._profile_info()))
-        return profile_data.get("timezone", None)
+        return fitbit2oscar.time_helpers.get_timezone_from_profile(
+            self.config.profile_path
+        )
 
 
 takeout_sleep_keys = SleepKeys(
@@ -29,7 +31,10 @@ takeout_sleep_keys = SleepKeys(
 )
 
 takeout_sleep_config = SleepConfig(
-    glob="sleep-", filetype="json", keys=takeout_sleep_keys
+    glob="sleep-",
+    filetype="json",
+    dir="Global Export Data",
+    keys=takeout_sleep_keys,
 )
 
 takeout_vitals_config = VitalsConfig(
@@ -37,9 +42,11 @@ takeout_vitals_config = VitalsConfig(
     spo2_key="value.spo2",
     bpm_key="value.bpm",
     spo2_glob="spo2-",
-    bpm_glob="heart-rate-",
+    bpm_glob="heart_rate-",
     spo2_filetype="csv",
     bpm_filetype="json",
+    spo2_dir="Oxygen Saturation (SpO2)",
+    bpm_dir="Global Export Data",
 )
 
 takeout_config = Config(
