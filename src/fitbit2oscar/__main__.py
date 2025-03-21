@@ -15,23 +15,25 @@ logger = logging.getLogger(__name__)
 
 def discover_plugins() -> list[str]:
     plugins = []
-    for _, name, is_package in pkgutil.walk_packages(
-        path=["fitbit2oscar.plugins"]
-    ):
-        if is_package:
-            plugins.append(name)
+    plugins.extend(
+        name
+        for _, name, is_package in pkgutil.walk_packages(
+            path=["fitbit2oscar.plugins"]
+        )
+        if is_package
+    )
     return plugins
 
 
 def configure_logger(args: argparse.Namespace) -> None:
     """Sets up logger with verbose and log file options."""
-    format = (
+    log_format = (
         "%(asctime)s - %(levelname)s - %(message)s"
         if args.level
         else "%(asctime)s - %(message)s"
     )
     logging.basicConfig(
-        format=format,
+        format=log_format,
         datefmt="%Y-%m-%d %H:%M:%S",
         handlers=[logging.StreamHandler(), logging.FileHandler(args.log_file)]
         if args.log_file
@@ -43,10 +45,10 @@ def configure_logger(args: argparse.Namespace) -> None:
 def get_fitbit_path(input_path: Path, input_type: str) -> Path:
     try:
         InputType(input_type)
-    except ValueError:
+    except ValueError as e:
         raise argparse.ArgumentTypeError(
             f"Invalid structure '{input_type}', must be one of {list(InputType)}"
-        )
+        ) from e
     module = f"fitbit2oscar.{input_type}.paths"
     importlib.import_module(module)
     func = f"get_{input_type}_fitbit_path"
@@ -60,9 +62,7 @@ def process_date_arg(datestring: str, argtype: str) -> datetime.date:
             f"Invalid {argtype} date argument '{datestring}', must match YYYY-M-D format"
         )
     dateobj = datetime.date(
-        year=int(datematch.group(1)),
-        month=int(datematch.group(2)),
-        day=int(datematch.group(3)),
+        year=int(datematch[1]), month=int(datematch[2]), day=int(datematch[3])
     )
     if not (datetime.date.today() >= dateobj >= datetime.date(2010, 1, 1)):
         raise argparse.ArgumentTypeError(
@@ -106,17 +106,17 @@ class StoreLogFile(argparse.Action):
 class DateFormatValidator(argparse.Action):
     def __call__(self, parser, namespace, values, option_string) -> None:
         try:
-            if not getattr(namespace, "input_source", None) == "health_sync":
+            if getattr(namespace, "input_source", None) != "health_sync":
                 raise argparse.ArgumentError(
                     parser.input_source,
                     f"{option_string} is not valid for input type {namespace.input_source}",
                 )
             DateFormat(values)
-        except KeyError:
+        except KeyError as e:
             raise argparse.ArgumentError(
                 parser.date_format,
                 f"{option_string} must be one of {list(DateFormat)}",
-            )
+            ) from e
         setattr(namespace, self.dest, values)
 
 
