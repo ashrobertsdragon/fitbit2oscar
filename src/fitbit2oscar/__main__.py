@@ -50,10 +50,9 @@ def get_fitbit_path(input_path: Path, input_type: str) -> Path:
         raise argparse.ArgumentTypeError(
             f"Invalid structure '{input_type}', must be one of {list(InputType)}"
         ) from e
-    module = f"fitbit2oscar.{input_type}.paths"
+    module = f"fitbit2oscar.plugins.{input_type}.paths"
     importlib.import_module(module)
-    func = f"get_{input_type}_fitbit_path"
-    return getattr(module, func)(input_path)
+    return getattr(module, "verify_input_path")(input_path)
 
 
 def process_date_arg(datestring: str, argtype: str) -> datetime.date:
