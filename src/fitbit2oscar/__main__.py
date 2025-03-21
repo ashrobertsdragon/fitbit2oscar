@@ -51,8 +51,10 @@ def get_fitbit_path(input_path: Path, input_type: str) -> Path:
             f"Invalid structure '{input_type}', must be one of {list(InputType)}"
         ) from e
     module = f"fitbit2oscar.plugins.{input_type}.paths"
-    importlib.import_module(module)
-    return getattr(module, "verify_input_path")(input_path)
+    import_module = importlib.import_module(module)
+    verified_path = getattr(import_module, "verify_input_path")(input_path)
+    logger.debug(verified_path)
+    return verified_path
 
 
 def process_date_arg(datestring: str, argtype: str) -> datetime.date:
@@ -79,10 +81,10 @@ def process_date_arg(datestring: str, argtype: str) -> datetime.date:
 
 class InputPath(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None) -> None:
-        input_arg = getattr(namespace, "input_source", None)
+        input_arg = getattr(namespace, "input_type", None)
         if not input_arg:
             raise argparse.ArgumentError(
-                parser.input_source,
+                parser.input_type,
                 f"{option_string} requires an input type to be set (e.g., 'takeout', 'health_sync').",
             )
         fitbit_path = get_fitbit_path(Path(values), input_arg)
@@ -106,10 +108,10 @@ class StoreLogFile(argparse.Action):
 class DateFormatValidator(argparse.Action):
     def __call__(self, parser, namespace, values, option_string) -> None:
         try:
-            if getattr(namespace, "input_source", None) != "health_sync":
+            if getattr(namespace, "input_type", None) != "health_sync":
                 raise argparse.ArgumentError(
-                    parser.input_source,
-                    f"{option_string} is not valid for input type {namespace.input_source}",
+                    parser.input_type,
+                    f"{option_string} is not valid for input type {namespace.input_type}",
                 )
             DateFormat(values)
         except KeyError as e:
@@ -128,8 +130,8 @@ def create_parser() -> argparse.Namespace:
         description="Converts Fitbit data to OSCAR format",
     )
 
-    input_source = parser.add_argument(  # noqa: F841
-        "input_source",
+    input_type = parser.add_argument(  # noqa: F841
+        "input_type",
         help=(
             f"Source of Fitbit data ({', '.join(input_choices)}) / "
             "Defaults to 'takeout' since Health Sync support is experimental"
@@ -230,3 +232,7 @@ def main() -> None:
         logger.fatal(f"Error processing data: {e}")
     except Exception as e:
         logger.exception(f"Unhandled exception: {e}")
+
+
+if __name__ == "__main__":
+    main()
