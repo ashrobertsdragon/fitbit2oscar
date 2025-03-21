@@ -25,6 +25,9 @@ requires-python = ">=3.10"
 dependencies = [
     "pydantic>=2.10.6",
 ]
+[project.urls]
+"Source" = "https://github.com/ashrobertsdragon/fitbit2oscar"
+"Issues" = "https://github.com/ashrobertsdragon/fitbit2oscar/issues"
 
 [project.scripts]
 fitbit2oscar = "fitbit2oscar:main"

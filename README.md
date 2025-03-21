@@ -84,7 +84,7 @@ pip install -r requirements.txt
 Optionally, if you are familiar with uv, you can install Fitbit2Oscar as a command line tool with:
 
 ```sh
-uv tool install git+https://github.com/your-repo/fitbit2oscar.git
+uv tool install git+https://github.com/ashrobertsdragon/fitbit2oscar.git
 ```
 
 ### Usage
