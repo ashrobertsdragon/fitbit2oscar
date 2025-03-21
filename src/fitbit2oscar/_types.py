@@ -16,5 +16,5 @@ Sleep = TypeVar("Sleep", CSVRows, SleepEntry)
 
 
 class VitalsData(NamedTuple):
-    timestamp: datetime.datetime
+    timestamp: datetime
     data: int
