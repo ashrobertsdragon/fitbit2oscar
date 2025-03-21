@@ -6,6 +6,7 @@ import pkgutil
 import re
 from pathlib import Path
 
+import fitbit2oscar.plugins
 import fitbit2oscar.process_data as run
 from fitbit2oscar._enums import DateFormat, InputType
 
@@ -18,7 +19,7 @@ def discover_plugins() -> list[str]:
     plugins.extend(
         name
         for _, name, is_package in pkgutil.walk_packages(
-            path=["fitbit2oscar.plugins"]
+            path=fitbit2oscar.plugins.__path__
         )
         if is_package
     )
