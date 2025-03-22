@@ -28,6 +28,10 @@ class DataHandler:
         self.args = args
         self.config = config
 
+        self._profile_path: Path | None = None
+        self._timezone: datetime.timezone | None = None
+        self._paths: dict[str, list[Path]] = {}
+
     def _dirs(self) -> tuple[Path, Path, Path]:
         """The data directories."""
 
