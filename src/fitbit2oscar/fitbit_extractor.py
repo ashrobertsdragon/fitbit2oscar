@@ -7,8 +7,8 @@ from fitbit2oscar._types import (
     SleepEntry,
     VitalsData,
     Sleep,
-    Config,
 )
+from fitbit2oscar.config import Config
 from fitbit2oscar.read_file import read_file
 from fitbit2oscar.time_helpers import convert_timestamp, is_valid_date
 from fitbit2oscar._logger import logger
@@ -111,8 +111,8 @@ class FitbitExtractor:
     def collect_vitals_data(
         self,
         vitals_files: list[Path],
-        start_date: datetime.datetime.datetime.date,
-        end_date: datetime.datetime.datetime.date,
+        start_date: datetime.datetime.date,
+        end_date: datetime.datetime.date,
         vitals_key: DictNotation,
         vitals_type: str,
         min_valid: int,
@@ -129,8 +129,8 @@ class FitbitExtractor:
     def collect_sleep_data(
         self,
         sleep_files: list[Path],
-        start_date: datetime.datetime.datetime.date,
-        end_date: datetime.datetime.datetime.date,
+        start_date: datetime.datetime.date,
+        end_date: datetime.datetime.date,
     ) -> Generator[SleepEntry, None, None]:
         for file in sleep_files:
             sleep_data = list(
