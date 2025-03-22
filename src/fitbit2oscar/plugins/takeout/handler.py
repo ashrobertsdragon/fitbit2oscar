@@ -12,7 +12,7 @@ class TakeoutHandler(DataHandler):
         """Build the glob pattern from data type and file type"""
         return f"{data_type}*.{filetype}"
 
-    def get_timezone(self) -> datetime.timezone | None:
+    def _get_timezone(self) -> datetime.timezone | None:
         """Get the user timezone from Fitbit profile CSV"""
         return fitbit2oscar.time_helpers.get_timezone_from_profile(
             self.profile_path
