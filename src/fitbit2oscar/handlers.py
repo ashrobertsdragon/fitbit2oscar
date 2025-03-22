@@ -1,30 +1,19 @@
 import argparse
 import datetime
 import importlib
-import pkgutil
+
 from pathlib import Path
 from collections.abc import Generator
+from typing import ClassVar
 
 from fitbit2oscar.config import Config
 from fitbit2oscar.exceptions import FitbitConverterDataError
 from fitbit2oscar._types import VitalsData, SleepEntry
-from fitbit2oscar._logger import logger
-
-
-for _, name, is_package in pkgutil.walk_packages(
-    path=["fitbit2oscar.plugins"],
-):
-    if is_package:
-        try:
-            importlib.import_module(f"fitbit2oscar.plugins.{name}.handler")
-            logger.debug(f"Plugin {name} added")
-        except ModuleNotFoundError:
-            pass
 
 
 class DataHandler:
     package = "fitbit2oscar"
-    _registry = {}
+    _registry: ClassVar[dict[str, type["DataHandler"]]] = {}
 
     @classmethod
     def __init_subclass__(cls, **kwargs):
@@ -35,13 +24,13 @@ class DataHandler:
         cls.package = _package
         cls._registry[_package] = cls
 
-    def __repr__(cls) -> str:
-        return f"{cls.__name__} handler for {cls.package} input type"
+    def __repr__(self) -> str:
+        return f"{self.__name__} handler for {self.package} input type"
 
     def __init__(self, args: argparse.Namespace, config: Config) -> None:
         self.args = args
         self.config = config
-        package_path = ".".join(self.__module__.split(".")[0:-1])
+        package_path = ".".join(self.__module__.split(".")[:-1])
         self.extractor_module: importlib.ModuleType = importlib.import_module(
             f"{package_path}.extract"
         )
