@@ -1,4 +1,6 @@
 import datetime
+from pathlib import Path
+
 import fitbit2oscar.time_helpers
 from fitbit2oscar.handlers import DataHandler
 from fitbit2oscar.config import Config, SleepConfig, VitalsConfig, SleepKeys
@@ -13,8 +15,11 @@ class TakeoutHandler(DataHandler):
 
     def get_timezone(self) -> datetime.timezone | None:
         """Get the user timezone from Fitbit profile CSV"""
+        profile_path: Path = self.args.fitbit_path.joinpath(
+            *self.config.profile_path
+        )
         return fitbit2oscar.time_helpers.get_timezone_from_profile(
-            self.config.profile_path
+            profile_path
         )
 
 
@@ -51,7 +56,7 @@ takeout_vitals_config = VitalsConfig(
 
 takeout_config = Config(
     required_fields=["data", "dateofSleep", "levels"],
-    profile_path="Your Profile" / "Profile.csv",
+    profile_path=["Your Profile", "Profile.csv"],
     sleep=takeout_sleep_config,
     vitals=takeout_vitals_config,
 )
