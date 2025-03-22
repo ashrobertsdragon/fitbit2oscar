@@ -1,7 +1,7 @@
 from collections.abc import Callable
-from typing import TypedDict
+from typing import TypedDict, get_type_hints, get_args
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from fitbit2oscar._types import DictNotation, Sleep, SleepLevels
 
@@ -47,11 +47,26 @@ class SleepConfig(BaseModel):
     ) = None
     resolver: Resolver | None = None
 
-    def model_post_init(self) -> None:
+    def model_post_init(self, __context=None) -> None:
         if self.sleep_transformations is None:
             self.sleep_transformations = {
                 key: lambda entry: entry[key] for key in self.keys.values()
             }
+
+    @field_validator("keys", mode="before")
+    @classmethod
+    def set_default_sleep_keys(cls, keys: SleepKeys) -> SleepKeys:
+        validated_keys = {
+            key: (
+                None
+                if hasattr(key_type, "__args__")
+                and type(None) in get_args(key_type)
+                and key not in keys
+                else keys[key]
+            )
+            for key, key_type in get_type_hints(SleepKeys).items()
+        }
+        return SleepKeys(**validated_keys)
 
     def _reset_before_entry(self):
         self.resolver.clear()
@@ -76,7 +91,7 @@ class VitalsConfig(TypedDict):
 
 class Config(BaseModel):
     required_fields: list[DictNotation] = Field(default_factory=list)
-    profile_path: str | None = None
+    profile_path: list[str] | None = None
     use_seconds: bool = Field(default=True)
 
     sleep: SleepConfig = Field(default_factory=SleepConfig)
