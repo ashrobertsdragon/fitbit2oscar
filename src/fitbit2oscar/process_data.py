@@ -19,7 +19,7 @@ def get_data(
 ]:
     """Parse data using the appropriate handler."""
     handler = DataHandlerFactory.create_client(args.input_type, args)
-    extractor = FitbitExtractor(args.config, handler.timezone)
+    extractor = FitbitExtractor(handler.config, handler.timezone)
     sp02_generator, bpm_generator, sleep_generator = extractor.extract_data(
         handler.paths,
         args.start_date,
