@@ -2,7 +2,7 @@ import argparse
 import importlib
 import contextlib
 import pkgutil
-import sys
+from types import ModuleType
 
 import fitbit2oscar.plugins
 from fitbit2oscar.config import Config
@@ -13,7 +13,7 @@ from fitbit2oscar._logger import logger
 PLUGINS_DIR = fitbit2oscar.plugins
 
 with contextlib.suppress(ModuleNotFoundError):
-    plugins = {
+    PLUGINS: dict[str, ModuleType] = {
         name: importlib.import_module(f"{PLUGINS_DIR.__name__}.{name}.handler")
         for _, name, is_package in pkgutil.walk_packages(
             path=PLUGINS_DIR.__path__
@@ -27,7 +27,7 @@ class DataHandlerFactory:
     def create_client(
         input_type: str, args: argparse.Namespace
     ) -> DataHandler:
-        plugin = plugins[input_type]
+        plugin: ModuleType = PLUGINS[input_type]
         for obj in vars(plugin).values():
             if isinstance(obj, Config):
                 config = obj
