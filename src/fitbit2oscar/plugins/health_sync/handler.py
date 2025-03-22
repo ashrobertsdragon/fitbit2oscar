@@ -49,7 +49,7 @@ class HealthSyncHandler(DataHandler):
         except KeyError:
             raise FitbitConverterValueError(
                 f"Invalid date format '{date_type}'"
-            )
+            ) from None
 
     def _get_timezone(self) -> None:
         self.timezone = time_helpers.get_local_timezone()
@@ -62,8 +62,8 @@ time_format = "%H:%M"
 
 vitals_config = VitalsConfig(
     timestamp="Date",
-    spo2="Oxygen saturation",
-    bpm="Heart rate",
+    spo2_key="Oxygen saturation",
+    bpm_key="Heart rate",
     spo2_glob="Oxygen saturation",
     bpm_glob="Heart rate",
     spo2_filetype="csv",
