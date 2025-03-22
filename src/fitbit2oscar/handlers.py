@@ -1,14 +1,11 @@
 import argparse
 import datetime
-import importlib
 
 from pathlib import Path
-from collections.abc import Generator
 from typing import ClassVar
 
 from fitbit2oscar.config import Config
 from fitbit2oscar.exceptions import FitbitConverterDataError
-from fitbit2oscar._types import VitalsData, SleepEntry
 
 
 class DataHandler:
@@ -30,24 +27,6 @@ class DataHandler:
     def __init__(self, args: argparse.Namespace, config: Config) -> None:
         self.args = args
         self.config = config
-        package_path = ".".join(self.__module__.split(".")[:-1])
-        self.extractor_module: importlib.ModuleType = importlib.import_module(
-            f"{package_path}.extract"
-        )
-
-    def _profile_info(self) -> Path:
-        if self.config.profile_path is None:
-            raise FitbitConverterDataError(
-                f"There is no profile path utilized in "
-                f"{self.package} input type"
-            )
-        return self.args.fitbit_path / self._walk_paths(
-            self.config.profile_path
-        )
-
-    @staticmethod
-    def _walk_paths(paths: list[str] | str):
-        return paths if isinstance(paths, str) else "/".join(paths)
 
     def _dirs(self) -> tuple[Path, Path, Path]:
         """The data directories."""
@@ -88,6 +67,20 @@ class DataHandler:
             pattern = self._build_glob_pattern(data_type, filetype)
             self.paths[f"{key}_paths"] = directory.glob(pattern)
 
+    def _build_profile_path(self) -> Path:
+        if self.config.profile_path is None:
+            raise FitbitConverterDataError(
+                f"There is no profile path utilized in "
+                f"{self.package} input type"
+            )
+        return self.args.fitbit_path.joinpath(*self.config.profile_path)
+
+    @property
+    def profile_path(self) -> Path:
+        if not self._profile_path:
+            self._profile_path = self._build_profile_path()
+        return self._profile_path
+
     @property
     def timezone(self) -> datetime.timezone | None:
         """The user timezone if one exists or None"""
@@ -100,17 +93,6 @@ class DataHandler:
         if not self._paths:
             self._paths = self._get_paths()
         return self._paths
-
-    def parse_data(
-        self,
-    ) -> tuple[
-        Generator[VitalsData, None, None],
-        Generator[VitalsData, None, None],
-        Generator[SleepEntry, None, None],
-    ]:
-        return self.extractor_module.extract_data(
-            self.paths, self.args.start_date, self.args.end_date, self.timezone
-        )
 
     def _build_glob_pattern(
         self, data_type: str, filetype: str, **kwargs

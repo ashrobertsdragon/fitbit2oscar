@@ -1,5 +1,4 @@
 import datetime
-from pathlib import Path
 
 import fitbit2oscar.time_helpers
 from fitbit2oscar.handlers import DataHandler
@@ -15,11 +14,8 @@ class TakeoutHandler(DataHandler):
 
     def get_timezone(self) -> datetime.timezone | None:
         """Get the user timezone from Fitbit profile CSV"""
-        profile_path: Path = self.args.fitbit_path.joinpath(
-            *self.config.profile_path
-        )
         return fitbit2oscar.time_helpers.get_timezone_from_profile(
-            profile_path
+            self.profile_path
         )
 
 
