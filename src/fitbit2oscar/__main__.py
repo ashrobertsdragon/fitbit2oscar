@@ -4,14 +4,16 @@ import importlib
 import logging
 import pkgutil
 import re
+import sys
 from pathlib import Path
 
 import fitbit2oscar.plugins
 import fitbit2oscar.process_data as run
 from fitbit2oscar._enums import DateFormat, InputType
+from fitbit2oscar.exceptions import FitbitConverterError
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("fitbit2oscar")
 
 
 def discover_plugins() -> list[str]:
@@ -230,8 +232,12 @@ def main() -> None:
         run.process_data(args)
     except AssertionError as e:
         logger.fatal(f"Error processing data: {e}")
+        sys.exit(1)
+    except FitbitConverterError:
+        sys.exit(1)
     except Exception as e:
         logger.exception(f"Unhandled exception: {e}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
