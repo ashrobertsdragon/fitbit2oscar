@@ -36,8 +36,7 @@ class FitbitExtractor:
                 data = data[key]
             except (KeyError, TypeError):
                 data
-        result = data.keys() if isinstance(data, dict) else data
-        return result
+        return data.keys() if isinstance(data, dict) else data
 
     def is_valid_sleep_entry(
         self,
@@ -143,9 +142,7 @@ class FitbitExtractor:
 
     def extract_data(
         self,
-        spo2_files: list[Path],
-        bpm_files: list[Path],
-        sleep_files: list[Path],
+        file_paths: dict[str, list[Path]],
         start_date: datetime.date,
         end_date: datetime.date,
     ) -> tuple[
@@ -155,7 +152,7 @@ class FitbitExtractor:
     ]:
         """Processes all data files and returns generators for each data type"""
         spo2_data = self.collect_vitals_data(
-            spo2_files,
+            file_paths["spo2_paths"],
             start_date,
             end_date,
             vitals_key=self.config.vitals.spo2_key,
@@ -163,13 +160,15 @@ class FitbitExtractor:
             min_valid=self.SPO2_MIN_VALID,
         )
         bpm_data = self.collect_vitals_data(
-            bpm_files,
+            file_paths["bpm_paths"],
             start_date,
             end_date,
             vitals_key=self.config.vitals.bpm_key,
             vitals_type="Heart rate",
             min_valid=self.BPM_MIN_VALID,
         )
-        sleep_data = self.collect_sleep_data(sleep_files, start_date, end_date)
+        sleep_data = self.collect_sleep_data(
+            file_paths["sleep_paths"], start_date, end_date
+        )
 
         return spo2_data, bpm_data, sleep_data
