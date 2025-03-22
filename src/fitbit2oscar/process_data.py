@@ -5,6 +5,7 @@ from datetime import datetime
 from fitbit2oscar import write_file
 from fitbit2oscar._types import SleepHealthData, SleepEntry, VitalsData
 from fitbit2oscar.factory import DataHandlerFactory
+from fitbit2oscar.fitbit_extractor import FitbitExtractor
 from fitbit2oscar.parsers import parse_sleep_data, parse_sleep_health_data
 from fitbit2oscar._logger import logger
 
@@ -18,14 +19,9 @@ def get_data(
 ]:
     """Parse data using the appropriate handler."""
     handler = DataHandlerFactory.create_client(args.input_type, args)
-    sp02_files, bpm_files, sleep_files, timezone = (
-        handler.get_paths_and_timezone()
-    )
-    sp02_generator, bpm_generator, sleep_generator = handler.extract_data(
-        sp02_files,
-        bpm_files,
-        sleep_files,
-        timezone,
+    extractor = FitbitExtractor(args.config, handler.timezone)
+    sp02_generator, bpm_generator, sleep_generator = extractor.extract_data(
+        handler.paths,
         args.start_date,
         args.end_date,
     )
