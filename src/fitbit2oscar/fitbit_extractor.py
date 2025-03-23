@@ -45,8 +45,8 @@ class FitbitExtractor:
         end_date: datetime.date,
     ) -> bool:
         """Validates sleep entry based on format and datetime.date range"""
-        if not all(
-            self.get_nested_value(entry, field) in entry
+        if any(
+            self.get_nested_value(entry, field) not in entry
             for field in self.config.required_fields
         ):
             return False
