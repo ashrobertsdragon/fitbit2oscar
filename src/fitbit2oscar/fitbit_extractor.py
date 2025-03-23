@@ -117,7 +117,7 @@ class FitbitExtractor:
         vitals_type: str,
         min_valid: int,
     ) -> Generator[VitalsData, None, None]:
-        yield (
+        yield from (
             (timestamp, data)
             for file in vitals_files
             for timestamp, data in self.extract_vitals_data(
@@ -142,7 +142,7 @@ class FitbitExtractor:
 
     def extract_data(
         self,
-        file_paths: dict[str, list[Path]],
+        file_paths: dict[str, Iterable[Path]],
         start_date: datetime.date,
         end_date: datetime.date,
     ) -> tuple[
