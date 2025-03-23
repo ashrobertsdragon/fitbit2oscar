@@ -1,6 +1,7 @@
 import argparse
 import datetime
 
+from collections.abc import Generator
 from pathlib import Path
 from typing import ClassVar
 
@@ -30,7 +31,7 @@ class DataHandler:
 
         self._profile_path: Path | None = None
         self._timezone: datetime.timezone | None = None
-        self._paths: dict[str, list[Path]] = {}
+        self._paths: dict[str, Generator[Path, None, None]] = {}
 
     def _dirs(self) -> tuple[Path, Path, Path]:
         """The data directories."""
@@ -49,7 +50,7 @@ class DataHandler:
 
         return spo2_dir, bpm_dir, sleep_dir
 
-    def _get_paths(self) -> None:
+    def _get_paths(self) -> dict[str, str]:
         """
         Get lists of Paths to data files in specified format for SpO2, heart
         rate, and sleep data.
@@ -71,6 +72,8 @@ class DataHandler:
         ):
             pattern = self._build_glob_pattern(data_type, filetype)
             self._paths[f"{key}_paths"] = directory.glob(pattern)
+
+        return self._paths
 
     def _build_profile_path(self) -> Path:
         if self.config.profile_path is None:
@@ -97,6 +100,10 @@ class DataHandler:
     def paths(self) -> dict[str, list[str]]:
         if not self._paths:
             self._paths = self._get_paths()
+        if not self._paths:
+            raise FitbitConverterDataError(
+                f"There are no paths for {self.package} plugin"
+            )
         return self._paths
 
     def _build_glob_pattern(
