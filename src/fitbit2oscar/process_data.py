@@ -83,8 +83,8 @@ def process_data(args: argparse.Namespace) -> None:
     )
     viatom_chunks = chunk_viatom_data(viatom_data)
 
-    write_file.create_viatom_file(args.output_path, viatom_chunks)
-    write_file.write_dreem_file(args.output_path, dreem_data)
+    write_file.create_viatom_file(args.export_path, viatom_chunks)
+    write_file.write_dreem_file(args.export_path, dreem_data)
 
     finish_message = f"Finished processing in {datetime.now() - script_start}"
     logger.info(finish_message)
