@@ -1,10 +1,14 @@
 import datetime
+import json
 import time
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from fitbit2oscar.exceptions import FitbitConverterValueError
-from fitbit2oscar.read_file import read_csv_file, read_json_file
+from fitbit2oscar.exceptions import (
+    FitbitConverterValueError,
+    FitbitConverterDataError,
+)
+import fitbit2oscar.read_file as read_file
 from fitbit2oscar._logger import logger
 
 
@@ -104,7 +108,18 @@ def get_local_timezone() -> datetime.timezone:
 
 def get_timezone_data(timezone_file: str) -> dict[str, str | dict[str, str]]:
     tz_path = Path(__file__).parent / "tz_data" / timezone_file
-    return next(read_json_file(tz_path))
+    if not tz_path.exists():
+        raise FitbitConverterDataError(f"Could not find {tz_path}")
+    with tz_path.open("r") as f:
+        return json.load(f)
+
+
+def parse_offset(zone: str) -> datetime.datetime:
+    offset_hr, offset_min = zone.split(":", maxsplit=1)
+    offset = datetime.timedelta(
+        hours=int(offset_hr), minutes=int(offset_min.split(":")[0])
+    )
+    return datetime.timezone(offset)
 
 
 def get_timezone(timezone: str) -> datetime.timezone:
@@ -114,30 +129,28 @@ def get_timezone(timezone: str) -> datetime.timezone:
         timezone.replace(region, "America")
 
     iana_zones: dict[str, str] = get_timezone_data("tz_data.json")
-    ms_zones: dict[str, dict[str, str]] = get_timezone_data("ms_zones.json")
-
     if timezone in iana_zones:
         logger.debug(f"Using IANA time zone for {timezone}")
         zone: str = iana_zones[timezone]
-    elif timezone in ms_zones:
+        return parse_offset(zone)
+
+    ms_zones: dict[str, dict[str, str]] = get_timezone_data(
+        "ms_timezones.json"
+    )
+    if timezone in ms_zones:
         logger.debug(f"Using Microsoft Time Zone Index for {timezone}")
         zone: str = ms_zones[timezone]["BaseUtcOffset"]
-    else:
-        logger.warning(
-            f"Could not find timezone {timezone}. Using system timezone."
-        )
-        return get_local_timezone()
+        return parse_offset(zone)
 
-    offset_hr, offset_min = zone.split(":", maxsplit=1)
-    offset = datetime.timedelta(
-        hours=int(offset_hr), minutes=int(offset_min.split(":")[0])
+    logger.warning(
+        f"Could not find timezone {timezone}. Using system timezone."
     )
-    return datetime.timezone(offset)
+    return get_local_timezone()
 
 
 def get_timezone_from_profile(profile_path: Path) -> datetime.timezone:
     """Get timezone from profile file."""
-    data = next(read_csv_file(profile_path))
+    data = next(read_file.read_csv_file(profile_path))
     timezone: str = data["timezone"]
     if not timezone:
         logger.error("Could not find timezone in profile file")
