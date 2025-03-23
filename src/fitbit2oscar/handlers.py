@@ -36,11 +36,12 @@ class DataHandler:
         """The data directories."""
 
         def _build_path(config_path: str | None) -> Path:
-            if config_path:
-                return self.args.fitbit_path / self._parse_dict_notation(
-                    config_path
-                )
-            return self.args.fitbit_path
+            path = (
+                config_path.split(".")
+                if isinstance(config_path, str)
+                else config_path
+            )
+            return self.args.fitbit_path.joinpath(*path)
 
         spo2_dir = _build_path(self.config.vitals["spo2_dir"])
         bpm_dir = _build_path(self.config.vitals["bpm_dir"])
