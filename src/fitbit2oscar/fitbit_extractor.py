@@ -52,7 +52,7 @@ class FitbitExtractor:
             return False
 
         valid_date = is_valid_date(
-            timestamp=entry[self.config.vitals.timestamp],
+            timestamp=entry[self.config.vitals["timestamp"]],
             start_date=start_date,
             end_date=end_date,
         )
@@ -75,7 +75,7 @@ class FitbitExtractor:
 
         for entry in vitals_data:
             timestamp = convert_timestamp(
-                entry[self.config.vitals.timestamp],
+                entry[self.config.vitals["timestamp"]],
                 self.config.timezone,
                 self.config.use_seconds,
             )
@@ -155,7 +155,7 @@ class FitbitExtractor:
             file_paths["spo2_paths"],
             start_date,
             end_date,
-            vitals_key=self.config.vitals.spo2_key,
+            vitals_key=self.config.vitals["spo2_key"],
             vitals_type="SpO2",
             min_valid=self.SPO2_MIN_VALID,
         )
@@ -163,7 +163,7 @@ class FitbitExtractor:
             file_paths["bpm_paths"],
             start_date,
             end_date,
-            vitals_key=self.config.vitals.bpm_key,
+            vitals_key=self.config.vitals["bpm_key"],
             vitals_type="Heart rate",
             min_valid=self.BPM_MIN_VALID,
         )
