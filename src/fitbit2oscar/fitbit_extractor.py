@@ -1,6 +1,6 @@
 import datetime
 from pathlib import Path
-from collections.abc import Generator
+from collections.abc import Generator, Iterable
 
 from fitbit2oscar._types import (
     DictNotation,
@@ -110,7 +110,7 @@ class FitbitExtractor:
 
     def collect_vitals_data(
         self,
-        vitals_files: list[Path],
+        vitals_files: Iterable[Path],
         start_date: datetime.datetime.date,
         end_date: datetime.datetime.date,
         vitals_key: DictNotation,
@@ -128,7 +128,7 @@ class FitbitExtractor:
 
     def collect_sleep_data(
         self,
-        sleep_files: list[Path],
+        sleep_files: Iterable[Path],
         start_date: datetime.datetime.date,
         end_date: datetime.datetime.date,
     ) -> Generator[SleepEntry, None, None]:
