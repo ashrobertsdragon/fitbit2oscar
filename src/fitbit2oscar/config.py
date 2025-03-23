@@ -39,6 +39,7 @@ class SleepKeys(TypedDict):
 class SleepConfig(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
+    dir: str
     glob: str
     filetype: str
     keys: SleepKeys
