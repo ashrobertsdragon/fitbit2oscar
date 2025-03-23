@@ -70,7 +70,7 @@ class DataHandler:
             keys, self._dirs(), data_types, filetypes
         ):
             pattern = self._build_glob_pattern(data_type, filetype)
-            self.paths[f"{key}_paths"] = directory.glob(pattern)
+            self._paths[f"{key}_paths"] = directory.glob(pattern)
 
     def _build_profile_path(self) -> Path:
         if self.config.profile_path is None:
