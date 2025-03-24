@@ -88,6 +88,7 @@ sleep_config = SleepConfig(
     dir="Health Sync Sleep",
     glob="Sleep",
     filetype="csv",
+    date_format="%m/%d/%Y %H:%M",
     keys=sleep_keys,
     sleep_transformations={
         "timestamp": lambda entry: time_helpers.format_timestamp(

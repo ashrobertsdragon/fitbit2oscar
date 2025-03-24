@@ -35,6 +35,7 @@ takeout_sleep_config = SleepConfig(
     glob="sleep-",
     filetype="json",
     dir="Global Export Data",
+    date_format="%Y-%m-%d",
     keys=takeout_sleep_keys,
 )
 

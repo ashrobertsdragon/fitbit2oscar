@@ -26,7 +26,7 @@ class FitbitExtractor:
 
     def get_nested_value(
         self, data: dict, key_path: DictNotation
-    ) -> str | int:
+    ) -> list | str | int:
         """Retrieves value from nested dictionary using dot or bracket notation"""
         if "." in key_path:
             key_path = key_path.split(".")
@@ -36,7 +36,15 @@ class FitbitExtractor:
                 data = data[key]
             except (KeyError, TypeError):
                 data
-        return data.keys() if isinstance(data, dict) else data
+        return list(data.keys()) if isinstance(data, dict) else data
+
+    def is_missing(self, entry: dict, field: DictNotation) -> bool:
+        field_value = self.get_nested_value(entry, field)
+        return (
+            any(item not in entry for item in field_value)
+            if type(field_value) is list
+            else field_value not in entry
+        )
 
     def is_valid_sleep_entry(
         self,
@@ -45,20 +53,24 @@ class FitbitExtractor:
         end_date: datetime.date,
     ) -> bool:
         """Validates sleep entry based on format and datetime.date range"""
+
         if any(
-            self.get_nested_value(entry, field) not in entry
+            self.is_missing(entry, field)
             for field in self.config.required_fields
         ):
             return False
 
         valid_date = is_valid_date(
-            timestamp=entry[self.config.vitals["timestamp"]],
+            date=convert_timestamp(
+                entry[self.config.sleep.keys["timestamp"]],
+                timestamp_format=self.config.sleep.date_format,
+            ).date(),
             start_date=start_date,
             end_date=end_date,
         )
 
         light_exists = "light" in self.get_nested_value(
-            entry, self.config.sleep_key.sleep_stages
+            entry, self.config.sleep.keys["sleep_stages"]
         )
 
         return valid_date and light_exists
@@ -75,7 +87,6 @@ class FitbitExtractor:
         extracted_count = valid_count = 0
 
         for entry in vitals_data:
-            print(entry)
             timestamp = convert_timestamp(
                 entry[self.config.vitals["timestamp"]],
                 timezone=self.timezone,
@@ -104,7 +115,11 @@ class FitbitExtractor:
     ) -> Generator[SleepEntry, None, None]:
         """Extracts and validates sleep data"""
         for entry in sleep_data:
-            if not self.is_valid_sleep_entry(entry, start_date, end_date):
+            if not self.is_valid_sleep_entry(
+                entry,
+                start_date,
+                end_date,
+            ):
                 continue
             yield {
                 sleep_key: transform_func(entry)
@@ -141,11 +156,16 @@ class FitbitExtractor:
         end_date: datetime.datetime.date,
     ) -> Generator[SleepEntry, None, None]:
         for file in sleep_files:
-            sleep_data = list(
-                read_file(file) if file.suffix == "csv" else read_file(file)
+            sleep_data = (
+                list(read_file(file))
+                if file.suffix == "csv"
+                else read_file(file)
             )
+
             yield from self.extract_sleep_data(
-                sleep_data, start_date, end_date
+                sleep_data,
+                start_date,
+                end_date,
             )
 
     def extract_data(

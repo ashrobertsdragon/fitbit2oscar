@@ -42,6 +42,7 @@ class SleepConfig(BaseModel):
     dir: str
     glob: str
     filetype: str
+    date_format: str
     keys: SleepKeys
     sleep_transformations: (
         dict[str, Callable[[Sleep], str | int | SleepLevels]] | None
