@@ -8,7 +8,6 @@ import fitbit2oscar.plugins
 from fitbit2oscar.config import Config
 from fitbit2oscar.exceptions import FitbitConverterValueError
 from fitbit2oscar.handlers import DataHandler
-from fitbit2oscar._logger import logger
 
 PLUGINS_DIR = fitbit2oscar.plugins
 
@@ -33,7 +32,6 @@ class DataHandlerFactory:
                 config = obj
                 break
         else:
-            logger.error(f"{input_type} is not a valid plugin")
             raise FitbitConverterValueError(
                 f"{input_type} is not a valid plugin"
             )
@@ -41,7 +39,6 @@ class DataHandlerFactory:
         try:
             return DataHandler._registry[input_type](args, config)
         except (KeyError, UnboundLocalError):
-            logger.error(f"Invalid input type '{input_type}'")
             raise FitbitConverterValueError(
                 f"Invalid input type '{input_type}'"
             ) from None
