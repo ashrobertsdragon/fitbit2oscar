@@ -53,6 +53,8 @@ takeout_vitals_config = VitalsConfig(
 takeout_config = Config(
     required_fields=["data", "dateofSleep", "levels"],
     profile_path=["Your Profile", "Profile.csv"],
+    csv_timestamp_format="%Y-%m-%d %H:%M:%S%",
+    json_timestamp_format="%m/%d/%y %H:%M:%S",
     sleep=takeout_sleep_config,
     vitals=takeout_vitals_config,
 )

@@ -94,6 +94,8 @@ class Config(BaseModel):
     required_fields: list[DictNotation] = Field(default_factory=list)
     profile_path: list[str] | None = None
     use_seconds: bool = Field(default=True)
+    csv_timestamp_format: str | None = None
+    json_timestamp_format: str | None = None
 
     sleep: SleepConfig = Field(default_factory=SleepConfig)
     vitals: VitalsConfig = Field(default_factory=VitalsConfig)

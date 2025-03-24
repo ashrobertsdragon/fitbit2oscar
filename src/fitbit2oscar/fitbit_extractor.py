@@ -68,16 +68,19 @@ class FitbitExtractor:
         vitals_data: Generator[dict, None, None],
         key: DictNotation,
         vitals_type: str,
+        timestamp_format: str,
         min_valid: int,
     ) -> Generator[VitalsData, None, None]:
         """Extracts and validates vitals data"""
         extracted_count = valid_count = 0
 
         for entry in vitals_data:
+            print(entry)
             timestamp = convert_timestamp(
                 entry[self.config.vitals["timestamp"]],
-                self.config.timezone,
-                self.config.use_seconds,
+                timezone=self.timezone,
+                timestamp_format=timestamp_format,
+                use_seconds=self.config.use_seconds,
             )
             value = self.get_nested_value(entry, key)
             extracted_count += 1
@@ -115,15 +118,20 @@ class FitbitExtractor:
         end_date: datetime.datetime.date,
         vitals_key: DictNotation,
         vitals_type: str,
+        timestamp_format: str,
         min_valid: int,
     ) -> Generator[VitalsData, None, None]:
         yield from (
             VitalsData(timestamp, data)
             for file in vitals_files
             for timestamp, data in self.extract_vitals_data(
-                read_file(file), vitals_key, vitals_type, min_valid
+                read_file(file),
+                vitals_key,
+                vitals_type,
+                timestamp_format,
+                min_valid,
             )
-            if is_valid_date(timestamp.datetime.date(), start_date, end_date)
+            if is_valid_date(timestamp.date(), start_date, end_date)
         )
 
     def collect_sleep_data(
@@ -157,6 +165,7 @@ class FitbitExtractor:
             end_date,
             vitals_key=self.config.vitals["spo2_key"],
             vitals_type="SpO2",
+            timestamp_format=self.config.csv_timestamp_format,
             min_valid=self.SPO2_MIN_VALID,
         )
         bpm_data = self.collect_vitals_data(
@@ -165,6 +174,7 @@ class FitbitExtractor:
             end_date,
             vitals_key=self.config.vitals["bpm_key"],
             vitals_type="Heart rate",
+            timestamp_format=self.config.json_timestamp_format,
             min_valid=self.BPM_MIN_VALID,
         )
         sleep_data = self.collect_sleep_data(

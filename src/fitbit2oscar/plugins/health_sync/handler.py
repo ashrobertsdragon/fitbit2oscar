@@ -121,5 +121,8 @@ sleep_config = SleepConfig(
 )
 
 health_sync_config = Config(
-    use_seconds=False, sleep=sleep_config, vitals=vitals_config
+    use_seconds=False,
+    csv_timestamp_format="%Y.%m.%d %H:%M:%S",
+    sleep=sleep_config,
+    vitals=vitals_config,
 )
