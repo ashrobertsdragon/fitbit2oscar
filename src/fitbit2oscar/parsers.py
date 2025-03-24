@@ -1,5 +1,6 @@
 import datetime
 from collections.abc import Callable, Generator
+from functools import partial
 
 from fitbit2oscar.time_helpers import convert_time_data
 from fitbit2oscar._types import (
@@ -7,37 +8,19 @@ from fitbit2oscar._types import (
     SleepEntry,
     SleepHealthData,
     VitalsData,
+    Vitals,
 )
 from fitbit2oscar._logger import logger
 
 
-def next_spo2(
-    spo2_data: Generator[VitalsData, None, None], bpm: VitalsData
-) -> Generator[tuple[VitalsData, VitalsData]]:
-    """Returns the next SpO2 and current BPM values."""
-    yield from ((spo2, bpm) for spo2 in spo2_data)
+def advance_spo2(spo2_data: Generator[VitalsData], vitals: Vitals) -> Vitals:
+    next_spo2: VitalsData = next(spo2_data, vitals.spo2)
+    return next_spo2, vitals.bpm
 
 
-def next_bpm(
-    bpm_data: Generator[VitalsData, None, None], spo2: VitalsData
-) -> Generator[tuple[VitalsData, VitalsData]]:
-    """Returns the next BPM and current SpO2 values."""
-    yield from ((spo2, bpm) for bpm in bpm_data)
-
-
-def next_all(
-    spo2_data: Generator[VitalsData, None, None],
-    bpm_data: Generator[VitalsData, None, None],
-) -> Generator[tuple[VitalsData, VitalsData]]:
-    """Returns the next SpO2 and BPM values."""
-    yield from zip(spo2_data, bpm_data)
-
-
-def next_none(
-    spo2: VitalsData, bpm: VitalsData
-) -> Generator[tuple[VitalsData, VitalsData]]:
-    """Returns the current spo2 and BPM values"""
-    yield (spo2, bpm)
+def advance_bpm(bpm_data: Generator[VitalsData], vitals: Vitals) -> Vitals:
+    next_bpm: VitalsData = next(bpm_data, vitals.bpm)
+    return vitals.spo2, next_bpm
 
 
 def sync_timestamps(
@@ -61,32 +44,45 @@ def sync_timestamps(
         Generator[tuple[VitalsData, VitalsData], None, None]: Tuples
             containing synchronized timestamps and SpO2 and BPM values.
     """
-    spo2_count = 0
-    bpm_count = 0
+    spo2_entries = 0
+    bpm_entries = 0
+    sync_from: dict[int, Callable[[VitalsData, Vitals], Vitals]] = {
+        -1: partial(advance_spo2, spo2_data),
+        1: partial(advance_bpm, bpm_data),
+    }
 
-    for spo2, bpm in next_all(spo2_data, bpm_data):
-        comparison: dict[
-            int,
-            tuple[Callable, Callable],
-        ] = {
-            -1: lambda: next_spo2(spo2_data, bpm),
-            0: lambda: next_none(spo2, bpm),
-            1: lambda: next_bpm(bpm_data, spo2),
-        }
-        timestamps = (spo2.timestamp > bpm.timestamp) - (
-            spo2.timestamp < bpm.timestamp
-        )
-        spo2_count += timestamps < 0
-        bpm_count += timestamps > 0
+    while True:
+        spo2: VitalsData = next(spo2_data, False)
+        bpm: VitalsData = next(bpm_data, False)
+        if not spo2 or not bpm:
+            break
 
-        yield next(comparison[timestamps]())
+        while spo2.timestamp != bpm.timestamp:
+            spo2_count = bpm_count = 0
+            timestamps_of = (spo2.timestamp > bpm.timestamp) - (
+                spo2.timestamp < bpm.timestamp
+            )
+
+            spo2_count += timestamps_of > 0
+            bpm_count += timestamps_of < 0
+
+            spo2_and_bpm_vitals = Vitals(spo2, bpm)
+            spo2, bpm = sync_from[timestamps_of](spo2_and_bpm_vitals)
+            if spo2_and_bpm_vitals == Vitals(spo2, bpm):
+                break
+
+        yield spo2, bpm
         if spo2_count or bpm_count:
             logger.debug(
                 f"{spo2_count} spo2 entries, {bpm_count} heart rate entries "
                 "skipped to find matching timestamp"
             )
-        spo2_count = 0
-        bpm_count = 0
+
+        spo2_entries += spo2_count + 1
+        bpm_entries += bpm_count + 1
+    logger.debug(
+        f"{spo2_entries} Sp02 entries, {bpm_entries} heart rate entries processed"
+    )
 
 
 def parse_sleep_health_data(

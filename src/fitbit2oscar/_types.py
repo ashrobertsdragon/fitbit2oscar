@@ -1,5 +1,6 @@
+from dataclasses import dataclass
 from datetime import datetime
-from typing import TypeAlias, TypeVar, NamedTuple
+from typing import TypeAlias, TypeVar
 
 DictNotation: TypeAlias = list[str] | str
 
@@ -15,6 +16,13 @@ SleepHealthData: TypeAlias = tuple[datetime, int, int]
 Sleep = TypeVar("Sleep", CSVRows, SleepEntry)
 
 
-class VitalsData(NamedTuple):
+@dataclass(slots=True)
+class VitalsData:
     timestamp: datetime
     data: int
+
+
+@dataclass(slots=True)
+class Vitals:
+    spo2: VitalsData
+    bpm: VitalsData

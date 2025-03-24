@@ -118,7 +118,7 @@ class FitbitExtractor:
         min_valid: int,
     ) -> Generator[VitalsData, None, None]:
         yield from (
-            (timestamp, data)
+            VitalsData(timestamp, data)
             for file in vitals_files
             for timestamp, data in self.extract_vitals_data(
                 read_file(file), vitals_key, vitals_type, min_valid
