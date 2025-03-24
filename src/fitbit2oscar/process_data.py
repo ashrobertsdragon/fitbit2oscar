@@ -1,6 +1,7 @@
 import argparse
 from collections.abc import Generator
 from datetime import datetime
+from pathlib import Path
 
 from fitbit2oscar import write_file
 from fitbit2oscar._types import SleepHealthData, SleepEntry, VitalsData
@@ -84,7 +85,11 @@ def process_data(args: argparse.Namespace) -> None:
     viatom_chunks = chunk_viatom_data(viatom_data)
 
     write_file.create_viatom_file(args.export_path, viatom_chunks)
-    write_file.write_dreem_file(args.export_path, dreem_data)
+    dreem_filename: Path = (
+        args.export_path
+        / f"dreem_{datetime.strftime(args.start_date, format="%Y%m%d")}-{datetime.strftime(args.end_date, format="%Y%m%d")}.csv"
+    )
+    write_file.write_dreem_file(dreem_filename, dreem_data)
 
     finish_message = f"Finished processing in {datetime.now() - script_start}"
     logger.info(finish_message)
