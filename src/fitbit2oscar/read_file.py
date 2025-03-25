@@ -9,12 +9,16 @@ from fitbit2oscar._types import CSVRows
 
 def read_csv_file(file_name: Path) -> Generator[CSVRows, None, None]:
     """Reads and returns rows from a CSV file."""
+    if not file_name.exists():
+        return
     with file_name.open("r") as f:
         yield from iter(csv.DictReader(f))
 
 
 def read_json_file(file_name: Path) -> Generator[dict[str, Any], None, None]:
     """Reads and returns data from a JSON file."""
+    if not file_name.exists():
+        return
     with file_name.open("r") as f:
         yield from json.load(f)
 
