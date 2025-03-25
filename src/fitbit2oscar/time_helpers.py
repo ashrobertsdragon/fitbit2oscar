@@ -4,6 +4,7 @@ import time
 from functools import lru_cache
 from pathlib import Path
 
+from fitbit2oscar._enums import DateDelta
 from fitbit2oscar.exceptions import (
     FitbitConverterValueError,
     FitbitConverterDataError,
@@ -159,3 +160,13 @@ def get_timezone_from_profile(profile_path: Path) -> datetime.timezone:
         logger.error("Could not find timezone in profile file")
         raise FitbitConverterValueError("Could not find timezone")
     return get_timezone(timezone)
+
+
+def calculate_time_delta(
+    date: datetime.date, delta: DateDelta
+) -> datetime.date:
+    if delta != DateDelta.Month:
+        return date + datetime.timedelta(days=delta.value)
+    month = date.month % 12 + 1
+    year = date.year + (month // 12)
+    return date.replace(year=year, month=month)

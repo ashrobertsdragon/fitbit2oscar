@@ -1,6 +1,10 @@
+import datetime
+from collections.abc import Generator
+
 from fitbit2oscar import time_helpers
 from fitbit2oscar.handlers import DataHandler
-from fitbit2oscar._enums import DateFormat
+from fitbit2oscar.time_helpers import calculate_time_delta
+from fitbit2oscar._enums import DateFormat, DateDelta
 from fitbit2oscar.exceptions import FitbitConverterValueError
 from fitbit2oscar.config import (
     Config,
@@ -19,7 +23,9 @@ class HealthSyncHandler(DataHandler):
         self,
         data_type: str,
         filetype: str,
-    ) -> str:
+        start_date: datetime.date,
+        end_date: datetime.date,
+    ) -> Generator[str, None, None]:
         """
         Generate filename from data type, date string format.
 
@@ -29,10 +35,12 @@ class HealthSyncHandler(DataHandler):
         Args:
             data_type (str): Type of data.
             filetype (str): File type. Expected to be "csv".
+            start_date (datetime.date): Start date.
+            end_date (datetime.date): End date.
 
         Returns:
-            str: Generated filename in format:
-                "{data_type} {date_format} {suffix}.{filetype}"
+            Generator[str, None, None]: Generator of filenames for the given
+            date range in format: "{data_type} {date} {suffix}.{filetype}"
 
         Raises:
             FitbitConverterValueError: If date_type is not a valid DateFormat.
@@ -41,15 +49,15 @@ class HealthSyncHandler(DataHandler):
         try:
             date_type = self.args.date_format
             date_format = DateFormat[date_type]
-            return (
-                f"Sleep ?? ?? ?? {suffix}.{filetype}"
-                if data_type == "Sleep"
-                else f"{data_type} {date_format} {suffix}.{filetype}"
-            )
         except KeyError:
             raise FitbitConverterValueError(
                 f"Invalid date format '{date_type}'"
             ) from None
+        glob_date = start_date
+        while glob_date <= end_date:
+            date_str = glob_date.strftime(date_format)
+            yield f"{data_type} {date_str} {suffix}.{filetype}"
+            glob_date = calculate_time_delta(glob_date, DateDelta[date_type])
 
     def _get_timezone(self) -> None:
         self.timezone = time_helpers.get_local_timezone()

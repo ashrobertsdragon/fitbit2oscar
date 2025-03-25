@@ -1,4 +1,5 @@
 import datetime
+from collections.abc import Generator
 
 import fitbit2oscar.time_helpers
 from fitbit2oscar.handlers import DataHandler
@@ -8,9 +9,19 @@ from fitbit2oscar.config import Config, SleepConfig, VitalsConfig, SleepKeys
 class TakeoutHandler(DataHandler):
     """Handler for Google Takeout data files"""
 
-    def _build_glob_pattern(self, data_type: str, filetype: str) -> str:
-        """Build the glob pattern from data type and file type"""
-        return f"{data_type}*.{filetype}"
+    def _build_glob_pattern(
+        self,
+        data_type: str,
+        filetype: str,
+        start_date: datetime.date,
+        end_date: datetime.date,
+    ) -> Generator[str, None, None]:
+        """Build the glob pattern from data type and file type for the given date range"""
+        glob_date = start_date
+        while glob_date <= end_date:
+            date_str = glob_date.strftime("%Y-%m-%d")
+            yield f"{data_type} - {date_str}.{filetype}"
+            glob_date += datetime.timedelta(days=1)
 
     def _get_timezone(self) -> datetime.timezone | None:
         """Get the user timezone from Fitbit profile CSV"""
@@ -43,7 +54,7 @@ takeout_vitals_config = VitalsConfig(
     timestamp="dateTime",
     spo2_key="value.spo2",
     bpm_key="value.bpm",
-    spo2_glob="spo2-",
+    spo2_glob="Minute SpO2",
     bpm_glob="heart_rate-",
     spo2_filetype="csv",
     bpm_filetype="json",

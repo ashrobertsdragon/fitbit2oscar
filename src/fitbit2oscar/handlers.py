@@ -50,7 +50,7 @@ class DataHandler:
 
         return spo2_dir, bpm_dir, sleep_dir
 
-    def _get_paths(self) -> dict[str, str]:
+    def _get_paths(self) -> dict[str, Generator[Path, None, None]]:
         """
         Get lists of Paths to data files in specified format for SpO2, heart
         rate, and sleep data.
@@ -70,9 +70,16 @@ class DataHandler:
         for key, directory, data_type, filetype in zip(
             keys, self._dirs(), data_types, filetypes
         ):
-            pattern = self._build_glob_pattern(data_type, filetype)
-            self._paths[f"{key}_paths"] = directory.glob(pattern)
-
+            self._paths[f"{key}_paths"] = (
+                file
+                for pattern in self._build_glob_pattern(
+                    data_type,
+                    filetype,
+                    self.args.start_date,
+                    self.args.end_date,
+                )
+                for file in directory.glob(pattern)
+            )
         return self._paths
 
     def _build_profile_path(self) -> Path:
@@ -97,7 +104,7 @@ class DataHandler:
         return self._timezone
 
     @property
-    def paths(self) -> dict[str, list[str]]:
+    def paths(self) -> dict[str, Generator[Path, None, None]]:
         if not self._paths:
             self._paths = self._get_paths()
         if not self._paths:
@@ -107,9 +114,14 @@ class DataHandler:
         return self._paths
 
     def _build_glob_pattern(
-        self, data_type: str, filetype: str, **kwargs
-    ) -> str:
-        """Build glob pattern based on provided arguments"""
+        self,
+        data_type: str,
+        filetype: str,
+        start_date: datetime.date,
+        end_date: datetime.date,
+        **kwargs,
+    ) -> Generator[str, None, None]:
+        """Build glob patterns based on provided arguments for date range"""
         raise NotImplementedError
 
     def _get_timezone(self) -> str | None:
