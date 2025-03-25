@@ -1,6 +1,7 @@
 import datetime
 import json
 import time
+from functools import lru_cache
 from pathlib import Path
 
 from fitbit2oscar.exceptions import (
@@ -84,6 +85,7 @@ def is_valid_date(
     return start_date <= date <= end_date
 
 
+@lru_cache
 def get_local_timezone() -> datetime.timezone:
     """Determine local timezone."""
     local = time.localtime()
@@ -112,6 +114,7 @@ def get_timezone_data(timezone_file: str) -> dict[str, str | dict[str, str]]:
         return json.load(f)
 
 
+@lru_cache
 def parse_offset(zone: str) -> datetime.datetime:
     offset_hr, offset_min = zone.split(":", maxsplit=1)
     offset = datetime.timedelta(
@@ -120,6 +123,7 @@ def parse_offset(zone: str) -> datetime.datetime:
     return datetime.timezone(offset)
 
 
+@lru_cache
 def get_timezone(timezone: str) -> datetime.timezone:
     """Get timezone from IANA or Microsoft Time Zone Index."""
     region = timezone.split("/")[0]
@@ -146,6 +150,7 @@ def get_timezone(timezone: str) -> datetime.timezone:
     return get_local_timezone()
 
 
+@lru_cache
 def get_timezone_from_profile(profile_path: Path) -> datetime.timezone:
     """Get timezone from profile file."""
     data = next(read_file.read_csv_file(profile_path))
