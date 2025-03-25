@@ -44,9 +44,9 @@ class DataHandler:
             )
             return self.args.fitbit_path.joinpath(*path)
 
-        spo2_dir = _build_path(self.config.vitals.spo2["dir"])
-        bpm_dir = _build_path(self.config.vitals.bpm["dir"])
-        sleep_dir = _build_path(self.config.sleep["dir"])
+        spo2_dir = _build_path(self.config.vitals["spo2"]["dir"])
+        bpm_dir = _build_path(self.config.vitals["bpm"]["dir"])
+        sleep_dir = _build_path(self.config.sleep.dir)
 
         return sleep_dir, bpm_dir, spo2_dir
 
@@ -75,14 +75,14 @@ class DataHandler:
             "spo2",
         ]
         data_types = [
-            self.config.sleep["glob"],
-            self.config.vitals.bpm["glob"],
-            self.config.vitals.spo2["glob"],
+            self.config.sleep.glob,
+            self.config.vitals["bpm"]["glob"],
+            self.config.vitals["spo2"]["glob"],
         ]
         filetypes = [
-            self.config.sleep["filetype"],
-            self.config.vitals.bpm["filetype"],
-            self.config.vitals.spo2["filetype"],
+            self.config.sleep.filetype,
+            self.config.vitals["bpm"]["filetype"],
+            self.config.vitals["spo2"]["filetype"],
         ]
 
         for key, directory, data_type, filetype in zip(
