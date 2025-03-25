@@ -21,16 +21,16 @@ def get_data(
     """Parse data using the appropriate handler."""
     handler = DataHandlerFactory.create_client(args.input_type, args)
     extractor = FitbitExtractor(handler.config, handler.timezone)
-    sp02_generator, bpm_generator, sleep_generator = extractor.extract_data(
+    spo2_generator, bpm_generator, sleep_generator = extractor.extract_data(
         handler.paths,
         args.start_date,
         args.end_date,
     )
-    return sp02_generator, bpm_generator, sleep_generator
+    return spo2_generator, bpm_generator, sleep_generator
 
 
 def parse_data(
-    sp02_generator: Generator[VitalsData],
+    spo2_generator: Generator[VitalsData],
     bpm_generator: Generator[VitalsData],
     sleep_generator: Generator[SleepEntry],
 ) -> tuple[
@@ -39,7 +39,7 @@ def parse_data(
 ]:
     """Parse data into viatom and dreem formats."""
     viatom_data: Generator[list[SleepHealthData], None, None] = (
-        parse_sleep_health_data(sp02_generator, bpm_generator)
+        parse_sleep_health_data(spo2_generator, bpm_generator)
     )
     dreem_data: Generator[dict[str, datetime | int]] = parse_sleep_data(
         sleep_generator
