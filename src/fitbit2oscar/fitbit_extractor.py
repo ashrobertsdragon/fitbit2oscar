@@ -94,7 +94,7 @@ class FitbitExtractor:
                 timestamp_format=timestamp_format,
                 use_seconds=self.config.use_seconds,
             )
-            value = float(self.get_nested_value(entry, key))
+            value = round(float(self.get_nested_value(entry, key)))
             extracted_count += 1
 
             if value >= min_valid:
