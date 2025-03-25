@@ -81,6 +81,7 @@ class FitbitExtractor:
         key: DictNotation,
         vitals_type: str,
         timestamp_format: str,
+        config_class: str,
         min_valid: int,
     ) -> Generator[VitalsData, None, None]:
         """Extracts and validates vitals data"""
@@ -88,7 +89,7 @@ class FitbitExtractor:
 
         for entry in vitals_data:
             timestamp = convert_timestamp(
-                entry[self.config.vitals["timestamp"]],
+                entry[self.config.vitals[config_class]["timestamp"]],
                 timezone=self.timezone,
                 timestamp_format=timestamp_format,
                 use_seconds=self.config.use_seconds,
@@ -133,6 +134,7 @@ class FitbitExtractor:
         end_date: datetime.datetime.date,
         vitals_key: DictNotation,
         vitals_type: str,
+        config_class: str,
         timestamp_format: str,
         min_valid: int,
     ) -> Generator[VitalsData, None, None]:
@@ -143,6 +145,7 @@ class FitbitExtractor:
                 read_file(file),
                 vitals_key,
                 vitals_type,
+                config_class,
                 timestamp_format,
                 min_valid,
             )
@@ -183,8 +186,9 @@ class FitbitExtractor:
             file_paths["spo2_paths"],
             start_date,
             end_date,
-            vitals_key=self.config.vitals["spo2_key"],
+            vitals_key=self.config.vitals.spo2["key"],
             vitals_type="SpO2",
+            config_class="spo2",
             timestamp_format=self.config.csv_timestamp_format,
             min_valid=self.SPO2_MIN_VALID,
         )
@@ -192,8 +196,9 @@ class FitbitExtractor:
             file_paths["bpm_paths"],
             start_date,
             end_date,
-            vitals_key=self.config.vitals["bpm_key"],
+            vitals_key=self.config.vitals.bpm["key"],
             vitals_type="Heart rate",
+            config_class="bpm",
             timestamp_format=self.config.json_timestamp_format,
             min_valid=self.BPM_MIN_VALID,
         )

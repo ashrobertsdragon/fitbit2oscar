@@ -3,7 +3,14 @@ from collections.abc import Generator
 
 import fitbit2oscar.time_helpers
 from fitbit2oscar.handlers import DataHandler
-from fitbit2oscar.config import Config, SleepConfig, VitalsConfig, SleepKeys
+from fitbit2oscar.config import (
+    BPMConfig,
+    Config,
+    SleepConfig,
+    SleepKeys,
+    SpO2Config,
+    VitalsConfig,
+)
 
 
 class TakeoutHandler(DataHandler):
@@ -50,16 +57,24 @@ takeout_sleep_config = SleepConfig(
     keys=takeout_sleep_keys,
 )
 
-takeout_vitals_config = VitalsConfig(
+takeout_spo2_config = SpO2Config(
+    timestamp="timestamp",
+    key="value.spo2",
+    glob="Minute SpO2",
+    filetype="csv",
+    dir="Oxygen Saturation (SpO2)",
+)
+
+takeout_bpm_config = BPMConfig(
     timestamp="dateTime",
-    spo2_key="value.spo2",
-    bpm_key="value.bpm",
-    spo2_glob="Minute SpO2",
-    bpm_glob="heart_rate",
-    spo2_filetype="csv",
-    bpm_filetype="json",
-    spo2_dir="Oxygen Saturation (SpO2)",
-    bpm_dir="Global Export Data",
+    key="value.bpm",
+    glob="heart_rate",
+    filetype="json",
+    dir="Global Export Data",
+)
+takeout_vitals_config = VitalsConfig(
+    spo2=takeout_spo2_config,
+    bpm=takeout_bpm_config,
 )
 
 takeout_config = Config(

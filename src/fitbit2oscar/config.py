@@ -79,16 +79,25 @@ class SleepConfig(BaseModel):
         return super().__getattr__(item)
 
 
-class VitalsConfig(TypedDict):
+class SpO2Config(TypedDict):
     timestamp: str
-    spo2_key: str
-    bpm_key: str
-    spo2_glob: str
-    bpm_glob: str
-    spo2_filetype: str
-    bpm_filetype: str
-    spo2_dir: str
-    bpm_dir: str
+    key: str
+    glob: str
+    filetype: str
+    dir: str
+
+
+class BPMConfig(TypedDict):
+    timestamp: str
+    key: str
+    glob: str
+    filetype: str
+    dir: str
+
+
+class VitalsConfig(TypedDict):
+    spo2: SpO2Config
+    bpm: BPMConfig
 
 
 class Config(BaseModel):

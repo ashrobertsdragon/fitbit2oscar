@@ -7,10 +7,12 @@ from fitbit2oscar.time_helpers import calculate_time_delta
 from fitbit2oscar._enums import DateFormat, DateDelta
 from fitbit2oscar.exceptions import FitbitConverterValueError
 from fitbit2oscar.config import (
+    BPMConfig,
     Config,
     Resolver,
     SleepConfig,
     SleepKeys,
+    SpO2Config,
     VitalsConfig,
 )
 from fitbit2oscar.plugins.health_sync import extract
@@ -67,19 +69,21 @@ datetime_format = "%Y.%m.%d %H:%M:%S"
 date_format = "%Y.%m.%d"
 time_format = "%H:%M"
 
-
-vitals_config = VitalsConfig(
+spo2_config = SpO2Config(
+    dir="Health Sync Oxygen Saturation",
     timestamp="Date",
-    spo2_key="Oxygen saturation",
-    bpm_key="Heart rate",
-    spo2_glob="Oxygen saturation",
-    bpm_glob="Heart rate",
-    spo2_filetype="csv",
-    bpm_filetype="csv",
-    spo2_dir="Health Sync Oxygen Saturation",
-    bpm_dir="Health Sync Heart rate",
+    glob="Oxygen saturation",
+    filetype="csv",
+    key="Oxygen saturation",
 )
-
+bpm_config = BPMConfig(
+    timestamp="Date",
+    key="Heart rate",
+    glob="Heart rate",
+    filetype="csv",
+    dir="Health Sync Heart rate",
+)
+vitals_config = VitalsConfig(spo2=spo2_config, bpm=bpm_config)
 
 sleep_keys = SleepKeys(
     timestamp="Date",
