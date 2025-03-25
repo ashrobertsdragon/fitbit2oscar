@@ -98,7 +98,7 @@ class FitbitExtractor:
 
             if value >= min_valid:
                 valid_count += 1
-                if valid_count % 15 == 0:
+                if valid_count % 1000 == 0:
                     logger.debug(f"{timestamp}: {vitals_type} {value}")
                 yield timestamp, value
 
@@ -152,8 +152,8 @@ class FitbitExtractor:
     def collect_sleep_data(
         self,
         sleep_files: Iterable[Path],
-        start_date: datetime.datetime.date,
-        end_date: datetime.datetime.date,
+        start_date: datetime.date,
+        end_date: datetime.date,
     ) -> Generator[SleepEntry, None, None]:
         for file in sleep_files:
             sleep_data = (
@@ -179,6 +179,7 @@ class FitbitExtractor:
         Generator[SleepEntry, None, None],
     ]:
         """Processes all data files and returns generators for each data type"""
+        print(type(start_date), type(end_date))
         spo2_data = self.collect_vitals_data(
             file_paths["spo2_paths"],
             start_date,
