@@ -20,7 +20,7 @@ class TakeoutHandler(DataHandler):
         glob_date = start_date
         while glob_date <= end_date:
             date_str = glob_date.strftime("%Y-%m-%d")
-            yield f"{data_type} - {date_str}.{filetype}"
+            yield f"{data_type}*-*{date_str}.{filetype}"
             glob_date += datetime.timedelta(days=1)
 
     def _get_timezone(self) -> datetime.timezone | None:
@@ -43,7 +43,7 @@ takeout_sleep_keys = SleepKeys(
 )
 
 takeout_sleep_config = SleepConfig(
-    glob="sleep-",
+    glob="sleep",
     filetype="json",
     dir="Global Export Data",
     date_format="%Y-%m-%d",
@@ -55,7 +55,7 @@ takeout_vitals_config = VitalsConfig(
     spo2_key="value.spo2",
     bpm_key="value.bpm",
     spo2_glob="Minute SpO2",
-    bpm_glob="heart_rate-",
+    bpm_glob="heart_rate",
     spo2_filetype="csv",
     bpm_filetype="json",
     spo2_dir="Oxygen Saturation (SpO2)",
