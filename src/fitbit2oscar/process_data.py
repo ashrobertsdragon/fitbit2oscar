@@ -48,7 +48,7 @@ def parse_data(
 
 
 def chunk_viatom_data(
-    viatom_data: list[list[SleepHealthData]],
+    viatom_data: Generator[list[SleepHealthData], None, None],
     chunk_size: int = 4095,
 ) -> Generator[list[SleepHealthData], None, None]:
     """
@@ -65,7 +65,7 @@ def chunk_viatom_data(
     """
     for i, session in enumerate(viatom_data, start=1):
         logger.info(
-            f"Processing session {i} into {len(session // chunk_size)} chunks"
+            f"Processing session {i} into {len(session) // chunk_size + 1} chunks"
         )
         for j in range(0, len(session), chunk_size):
             yield session[j : j + chunk_size]
