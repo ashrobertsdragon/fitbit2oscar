@@ -179,7 +179,6 @@ class FitbitExtractor:
         Generator[SleepEntry, None, None],
     ]:
         """Processes all data files and returns generators for each data type"""
-        print(type(start_date), type(end_date))
         spo2_data = self.collect_vitals_data(
             file_paths["spo2_paths"],
             start_date,
