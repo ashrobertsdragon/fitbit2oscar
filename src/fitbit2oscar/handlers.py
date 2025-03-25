@@ -48,37 +48,48 @@ class DataHandler:
         bpm_dir = _build_path(self.config.vitals["bpm_dir"])
         sleep_dir = _build_path(self.config.sleep.dir)
 
-        return spo2_dir, bpm_dir, sleep_dir
+        return sleep_dir, bpm_dir, spo2_dir
+
+    def _generate_paths(
+        self, directory: Path, data_type: str, filetype: str
+    ) -> Generator[Path, None, None]:
+        return (
+            file
+            for pattern in self._build_glob_pattern(
+                data_type,
+                filetype,
+                self.args.start_date,
+                self.args.end_date,
+            )
+            for file in directory.glob(pattern)
+        )
 
     def _get_paths(self) -> dict[str, Generator[Path, None, None]]:
         """
         Get lists of Paths to data files in specified format for SpO2, heart
         rate, and sleep data.
         """
-        keys = ["spo2", "bpm", "sleep"]
+        keys = [
+            "sleep",
+            "bpm",
+            "spo2",
+        ]
         data_types = [
-            self.config.vitals["spo2_glob"],
-            self.config.vitals["bpm_glob"],
             self.config.sleep.glob,
+            self.config.vitals["bpm_glob"],
+            self.config.vitals["spo2_glob"],
         ]
         filetypes = [
-            self.config.vitals["spo2_filetype"],
-            self.config.vitals["bpm_filetype"],
             self.config.sleep.filetype,
+            self.config.vitals["bpm_filetype"],
+            self.config.vitals["spo2_filetype"],
         ]
 
         for key, directory, data_type, filetype in zip(
             keys, self._dirs(), data_types, filetypes
         ):
-            self._paths[f"{key}_paths"] = (
-                file
-                for pattern in self._build_glob_pattern(
-                    data_type,
-                    filetype,
-                    self.args.start_date,
-                    self.args.end_date,
-                )
-                for file in directory.glob(pattern)
+            self._paths[f"{key}_paths"] = self._generate_paths(
+                directory, data_type, filetype
             )
         return self._paths
 
