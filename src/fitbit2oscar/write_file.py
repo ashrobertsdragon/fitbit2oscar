@@ -51,7 +51,9 @@ def write_viatom_binary_file(file_name: Path, data: bytes) -> None:
         f.write(data)
 
 
-def prepare_viatom_binary_data(data) -> bytes:
+def prepare_viatom_binary_data(
+    data: list[tuple[datetime.datetime, int, int]],
+) -> bytes:
     """
     Prepare binary data for Viatom file format.
 
@@ -90,7 +92,7 @@ def prepare_viatom_binary_data(data) -> bytes:
 
 def create_viatom_file(
     export_path: Path,
-    data: list[list[tuple[datetime.datetime, int, int]]],
+    data: Generator[list[tuple[datetime.datetime, int, int]], None, None],
 ) -> None:
     """
     Write data to a Viatom binary file.
@@ -102,13 +104,15 @@ def create_viatom_file(
     Raises:
         RuntimeError: If data chunk is too long
     """
-    for datum in data:
-        if len(datum) > 4095:
+    for page, datum in enumerate(data):
+        chunks = list(datum)
+        print(f"{len(chunks)=}")
+        if len(chunks) > 4095:
             raise FitbitConverterDataError(
-                f"Data chunk ({data[0][0]}, {data[-1][0]}) too long ({len(data)})!"
+                f"Data chunk ({page}{chunks[0]}) too long ({len(chunks)})!"
             )
 
-        bin_file = f"{data[0][0].strftime('%Y%m%d%H%M%S')}.bin"
-        binary_data = prepare_viatom_binary_data(data)
+        bin_file = f"{chunks[-1][0].strftime('%Y%m%d%H%M%S')}.bin"
+        binary_data = prepare_viatom_binary_data(chunks)
 
         write_viatom_binary_file(export_path / bin_file, binary_data)
