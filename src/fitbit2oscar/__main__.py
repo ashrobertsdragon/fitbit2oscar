@@ -59,26 +59,28 @@ def get_fitbit_path(input_path: Path, input_type: str) -> Path:
     return verified_path
 
 
-def process_date_arg(datestring: str, argtype: str) -> datetime.date:
-    datematch = re.match(r"(\d{4})-(\d{1,2})-(\d{1,2})", datestring)
-    if datematch is None:
-        raise argparse.ArgumentTypeError(
-            f"Invalid {argtype} date argument '{datestring}', must match YYYY-M-D format"
+class DateArgument(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None) -> None:
+        if not values and option_string is not None:
+            raise argparse.ArgumentError(
+                f"Must set a value for {option_string}"
+            )
+        datematch = re.match(r"(\d{4})-(\d{1,2})-(\d{1,2})", values)
+        if datematch is None:
+            raise argparse.ArgumentError(
+                f"Invalid {option_string} date argument '{values}', must match YYYY-M-D format"
+            )
+        dateobj = datetime.date(
+            year=int(datematch[1]),
+            month=int(datematch[2]),
+            day=int(datematch[3]),
         )
-    dateobj = datetime.date(
-        year=int(datematch[1]), month=int(datematch[2]), day=int(datematch[3])
-    )
-    if not (datetime.date.today() >= dateobj >= datetime.date(2010, 1, 1)):
-        raise argparse.ArgumentTypeError(
-            f"Invalid {argtype} date {datestring}, must be on or before today's date and no older than 2010-01-01."
-        )
+        if not (datetime.date.today() >= dateobj >= datetime.date(2010, 1, 1)):
+            raise argparse.ArgumentTypeError(
+                f"Invalid {option_string} date {values}, must be on or before today's date and no older than 2010-01-01."
+            )
 
-    adjustments = {
-        "start": lambda d: d - datetime.timedelta(days=1),
-        "end": lambda d: d + datetime.timedelta(days=1),
-        "file": lambda d: d,
-    }
-    return adjustments[argtype](dateobj)
+        setattr(namespace, self.dest, dateobj)
 
 
 class InputPath(argparse.Action):
@@ -163,7 +165,7 @@ def create_parser() -> argparse.Namespace:
         "-s",
         "--start-date",
         metavar="<YYYY-M-D>",
-        type=process_date_arg,
+        action=DateArgument,
         help="Optional start date for data",
         default=datetime.date(2010, 1, 1),
     )
@@ -172,7 +174,7 @@ def create_parser() -> argparse.Namespace:
         "-e",
         "--end-date",
         metavar="<YYYY-M-D>",
-        type=process_date_arg,
+        action=DateArgument,
         help="Optional end date for data",
         default=datetime.date.today(),
     )
@@ -233,8 +235,9 @@ def main() -> None:
     except AssertionError as e:
         logger.fatal(f"Error processing data: {e}")
         sys.exit(1)
-    except FitbitConverterError:
-        sys.exit(1)
+    except FitbitConverterError as e:
+        logger.error(str(e))
+    # sys.exit(1)
     except Exception as e:
         logger.exception(f"Unhandled exception: {e}")
         sys.exit(1)
