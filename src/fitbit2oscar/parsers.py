@@ -56,7 +56,6 @@ def sync_timestamps(
         bpm: VitalsData = next(bpm_data, False)
         if not spo2 or not bpm:
             break
-
         while spo2.timestamp != bpm.timestamp:
             spo2_count = bpm_count = 0
             timestamps_of = (spo2.timestamp > bpm.timestamp) - (
@@ -69,8 +68,8 @@ def sync_timestamps(
             spo2_and_bpm_vitals = Vitals(spo2, bpm)
             spo2, bpm = sync_from[timestamps_of](spo2_and_bpm_vitals)
             if spo2_and_bpm_vitals == Vitals(spo2, bpm):
-                break
-
+                return
+        print(spo2, bpm)
         yield spo2, bpm
         if spo2_count or bpm_count:
             logger.debug(
@@ -86,7 +85,7 @@ def sync_timestamps(
 
 
 def parse_sleep_health_data(
-    sp02_data: Generator[VitalsData, None, None],
+    spo2_data: Generator[VitalsData, None, None],
     bpm_data: Generator[VitalsData, None, None],
     session_split: int = 15,
 ) -> Generator[list[SleepHealthData], None, None]:
@@ -99,7 +98,7 @@ def parse_sleep_health_data(
     containing timestamps, sp02, and BPM values.
 
     Args:
-        sp02_data (Generator[VitalsData, None, None]): A generator of tuples
+        spo2_data (Generator[VitalsData, None, None]): A generator of tuples
             containing timestamps and sp02 values.
         bpm_data (Generator[VitalsData, None, None]): A generator of tuples
             containing timestamps and BPM values.
@@ -112,8 +111,12 @@ def parse_sleep_health_data(
     session: list[SleepHealthData] = []
     prev_timestamp = None
 
-    for sp02, bpm in sync_timestamps(sp02_data, bpm_data):
-        session.append((sp02.timestamp, sp02.data, bpm.data))
+    for sp02, bpm in sync_timestamps(spo2_data, bpm_data):
+        session.append((
+            sp02.timestamp,
+            sp02.data,
+            bpm.data,
+        ))
         if prev_timestamp and (
             sp02.timestamp - prev_timestamp
         ) > datetime.timedelta(minutes=session_split):
