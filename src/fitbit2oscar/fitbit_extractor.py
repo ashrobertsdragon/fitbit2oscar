@@ -94,7 +94,7 @@ class FitbitExtractor:
                 timestamp_format=timestamp_format,
                 use_seconds=self.config.use_seconds,
             )
-            value = self.get_nested_value(entry, key)
+            value = float(self.get_nested_value(entry, key))
             extracted_count += 1
 
             if value >= min_valid:
@@ -145,8 +145,8 @@ class FitbitExtractor:
                 read_file(file),
                 vitals_key,
                 vitals_type,
-                config_class,
                 timestamp_format,
+                config_class,
                 min_valid,
             )
             if is_valid_date(timestamp.date(), start_date, end_date)
@@ -186,7 +186,7 @@ class FitbitExtractor:
             file_paths["spo2_paths"],
             start_date,
             end_date,
-            vitals_key=self.config.vitals.spo2["key"],
+            vitals_key=self.config.vitals["spo2"]["key"],
             vitals_type="SpO2",
             config_class="spo2",
             timestamp_format=self.config.csv_timestamp_format,
@@ -196,7 +196,7 @@ class FitbitExtractor:
             file_paths["bpm_paths"],
             start_date,
             end_date,
-            vitals_key=self.config.vitals.bpm["key"],
+            vitals_key=self.config.vitals["bpm"]["key"],
             vitals_type="Heart rate",
             config_class="bpm",
             timestamp_format=self.config.json_timestamp_format,
