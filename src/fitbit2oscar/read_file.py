@@ -27,5 +27,5 @@ def read_file(
     file_name: Path,
 ) -> Generator[CSVRows | dict[str, Any], None, None]:
     """Reads and returns data from a CSV or JSON file."""
-    read_func = read_csv_file if file_name.suffix == "csv" else read_json_file
+    read_func = read_csv_file if file_name.suffix == ".csv" else read_json_file
     yield from read_func(file_name)
